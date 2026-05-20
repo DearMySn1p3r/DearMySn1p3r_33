@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
     --theme-1: #e89aae;
@@ -229,6 +229,31 @@
   .card.exporting .remove-btn { display: none !important; }
   .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   .card.exporting .placeholder { display: none !important; }
+  .card.exporting .qmark { display: none !important; }
+  /* html2canvas: ::before 그라디언트 바 - 단색 폴백 */
+  .card.exporting::before { background: var(--theme-1) !important; }
+  /* html2canvas: ::after blur circle 숨기기 */
+  .card.exporting::after { display: none !important; }
+  /* html2canvas: background-clip:text 미지원 → solid color 폴백 */
+  .card.exporting .names .x,
+  .card.exporting .qmark,
+  .card.exporting .slot .plus {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    color: var(--theme-deep) !important;
+  }
+  /* html2canvas: gradient background → solid color */
+  .card.exporting .title-line,
+  .card.exporting .rule {
+    background: var(--theme-deep) !important;
+  }
+  .card.exporting .dots span {
+    background: var(--theme-1) !important;
+  }
+  .card.exporting .credit::before {
+    color: var(--theme-deep) !important;
+  }
 
   .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.7; }
 
@@ -471,7 +496,7 @@ function renderSlots() {
   slotCount.textContent = slots;
 }
 
-// ── 저장: canvas로 각 슬롯 사전 렌더링 ──────────────────
+// ── 저장: 이미지 슬롯을 canvas로 사전 크롭 (html2canvas의 CSS transform 해석 보완) ──
 function bakeImages() {
   const restores = [];
   for (const slot of grid.querySelectorAll('.slot.has-image')) {
@@ -493,14 +518,15 @@ function bakeImages() {
     const dh = dispImg.naturalHeight * z * SCALE;
     ctx.drawImage(dispImg, cw/2 + tx - dw/2, ch/2 + ty - dh/2, dw, dh);
 
+    // disp → 단순 fill img로 교체
+    dispImg.style.display = 'none';
     const expImg = document.createElement('img');
     expImg.className = 'exp';
     expImg.src = cnv.toDataURL('image/png');
-    expImg.style.display = 'block';
+    expImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;';
 
     const wrap = slot.querySelector('.img-wrap');
     wrap.appendChild(expImg);
-    dispImg.style.display = 'none';
     restores.push({ wrap, expImg, dispImg });
   }
   return restores;
@@ -511,26 +537,6 @@ function unbakeImages(restores) {
     wrap.removeChild(expImg);
     dispImg.style.display = '';
   }
-}
-
-// ── CSS 변수 인라인화 (html-to-image가 CSS 변수를 못 읽는 문제 해결) ──
-function inlineCssVars(el) {
-  const computed = getComputedStyle(document.documentElement);
-  const vars = [
-    '--theme-1','--theme-2','--theme-soft','--theme-deep',
-    '--bg','--ink','--ink-soft','--muted','--line','--card','--gradient'
-  ];
-  const backup = {};
-  vars.forEach(v => {
-    const val = computed.getPropertyValue(v).trim();
-    if (val) { backup[v] = el.style.getPropertyValue(v); el.style.setProperty(v, val); }
-  });
-  return backup;
-}
-function restoreCssVars(el, backup) {
-  Object.entries(backup).forEach(([k,v]) => {
-    if (v) el.style.setProperty(k, v); else el.style.removeProperty(k);
-  });
 }
 
 // ── colors ─────────────────────────────────────────────
@@ -560,49 +566,47 @@ downloadBtn.addEventListener('click', async () => {
   const origText = downloadBtn.textContent;
   downloadBtn.textContent = '저장 중...';
 
-  // 1) 이미지 슬롯을 canvas-cropped img로 교체
+  // 1) 이미지 슬롯 사전 크롭 (CSS transform → 단순 fill)
   const restores = bakeImages();
 
-  // 2) CSS 변수 인라인화
-  const varBackup = inlineCssVars(card);
-
-  // 3) exporting 클래스 → UI 요소 숨기기
+  // 2) exporting 클래스 → UI 요소 숨기기
   card.classList.add('exporting');
 
-  // 4) 폰트 로드 대기
+  // 3) 폰트 로드 완료 대기
   try { await document.fonts.ready; } catch(e) {}
-
-  // 짧은 지연으로 DOM 반영 보장
-  await new Promise(r => setTimeout(r, 120));
+  await new Promise(r => setTimeout(r, 100));
 
   try {
-    // skipFonts: true  → 외부 폰트 CORS 오류 방지 (이미 페이지에 로드됨)
-    // cacheBust: false → 재요청으로 인한 CORS 오류 방지
-    const blob = await htmlToImage.toBlob(card, {
-      pixelRatio: 2,
-      skipFonts: true,
-      cacheBust: false,
+    // html2canvas: 브라우저 렌더링 엔진으로 직접 캡처 → 폰트 100% 정확
+    const canvas = await html2canvas(card, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
       backgroundColor: getComputedStyle(card).backgroundColor || '#ffffff',
+      logging: false,
+      removeContainer: true,
+      // 캡처 범위를 카드 영역으로 고정
+      x: 0, y: 0,
+      scrollX: 0, scrollY: 0,
     });
 
-    if (!blob) throw new Error('blob 생성 실패');
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pair-card-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    // 메모리 해제 (짧은 딜레이 후)
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    canvas.toBlob(blob => {
+      if (!blob) { alert('이미지 생성 실패. 다시 시도해주세요.'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pair-card-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
 
   } catch(err) {
     console.error('저장 오류:', err);
-    alert('저장 오류가 발생했어요: ' + err.message + '\n\n브라우저를 새로고침하거나 다른 브라우저를 사용해보세요.');
+    alert('저장 오류: ' + err.message);
   } finally {
     unbakeImages(restores);
-    restoreCssVars(card, varBackup);
     card.classList.remove('exporting');
     downloadBtn.disabled = false;
     downloadBtn.textContent = origText;
