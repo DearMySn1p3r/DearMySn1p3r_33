@@ -412,8 +412,9 @@ function clampTranslate(slot) {
   if (!img) return;
   const z  = parseFloat(slot.dataset.zoom || 1);
   const sr = slot.getBoundingClientRect();
-  const maxX = Math.max(0, (img.naturalWidth  * z - sr.width)  / 2);
-  const maxY = Math.max(0, (img.naturalHeight * z - sr.height) / 2);
+  // 이미지 가장자리 1px 안전 여백을 두어 안티앨리어싱으로 배경이 비치지 않게 클램핑 값 수정 (- 1)
+  const maxX = Math.max(0, (img.naturalWidth  * z - sr.width)  / 2 - 1);
+  const maxY = Math.max(0, (img.naturalHeight * z - sr.height) / 2 - 1);
   slot.dataset.tx = Math.max(-maxX, Math.min(maxX, parseFloat(slot.dataset.tx || 0)));
   slot.dataset.ty = Math.max(-maxY, Math.min(maxY, parseFloat(slot.dataset.ty || 0)));
 }
@@ -466,8 +467,8 @@ function loadImage(slot, file) {
     img.draggable = false;
     img.onload = () => {
       const sr = slot.getBoundingClientRect();
-      // +1px 여유: 소수점 픽셀 오차로 검은 배경이 삐져나오는 현상 방지
-      const coverScale = Math.max((sr.width + 1) / img.naturalWidth, (sr.height + 1) / img.naturalHeight);
+      // +2px 여유: 소수점 픽셀 렌더링 오차(안티앨리어싱)로 검은 배경이 삐져나오는 현상 방지
+      const coverScale = Math.max((sr.width + 2) / img.naturalWidth, (sr.height + 2) / img.naturalHeight);
       slot.dataset.minZoom = coverScale;
       slot.dataset.zoom    = coverScale;
       slot.dataset.tx = 0; slot.dataset.ty = 0;
