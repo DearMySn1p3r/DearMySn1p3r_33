@@ -466,7 +466,8 @@ function loadImage(slot, file) {
     img.draggable = false;
     img.onload = () => {
       const sr = slot.getBoundingClientRect();
-      const coverScale = Math.max(sr.width / img.naturalWidth, sr.height / img.naturalHeight);
+      // +1px 여유: 소수점 픽셀 오차로 검은 배경이 삐져나오는 현상 방지
+      const coverScale = Math.max((sr.width + 1) / img.naturalWidth, (sr.height + 1) / img.naturalHeight);
       slot.dataset.minZoom = coverScale;
       slot.dataset.zoom    = coverScale;
       slot.dataset.tx = 0; slot.dataset.ty = 0;
