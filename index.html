@@ -85,9 +85,10 @@
     box-shadow: 0 24px 60px -20px rgba(0,0,0,0.12), 0 8px 20px -12px rgba(0,0,0,0.06);
     transition: background 0.3s ease; overflow: hidden;
   }
-  .card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
+  .card-bar {
+    position: absolute; top: 0; left: 0; right: 0;
     height: 3px; background: var(--gradient);
+    border-radius: 8px 8px 0 0; pointer-events: none;
   }
   .card::after {
     content: ''; position: absolute; top: 22px; right: 22px;
@@ -217,7 +218,7 @@
   .foot { text-align: center; }
   .rule { width: 48px; height: 1.5px; background: var(--gradient); margin: 0 auto 14px; border-radius: 1px; }
   .credit { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; font-family: 'Inter',sans-serif; }
-  .credit::before { content: '✦'; color: var(--theme-deep); margin-right: 6px; }
+  .sparkle { color: var(--theme-deep); margin-right: 6px; }
 
   .editable { outline: none; border-radius: 3px; padding: 1px 3px; transition: background 0.15s; }
   .editable:hover { background: rgba(0,0,0,0.03); }
@@ -230,8 +231,6 @@
   .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   .card.exporting .placeholder { display: none !important; }
   .card.exporting .qmark { display: none !important; }
-  /* html2canvas: ::before 그라디언트 바 - 단색 폴백 */
-  .card.exporting::before { background: var(--theme-1) !important; }
   /* html2canvas: ::after blur circle 숨기기 */
   .card.exporting::after { display: none !important; }
   /* html2canvas: background-clip:text 미지원 → solid color 폴백 */
@@ -241,17 +240,6 @@
     background: none !important;
     -webkit-background-clip: unset !important;
     background-clip: unset !important;
-    color: var(--theme-deep) !important;
-  }
-  /* html2canvas: gradient background → solid color */
-  .card.exporting .title-line,
-  .card.exporting .rule {
-    background: var(--theme-deep) !important;
-  }
-  .card.exporting .dots span {
-    background: var(--theme-1) !important;
-  }
-  .card.exporting .credit::before {
     color: var(--theme-deep) !important;
   }
 
@@ -297,6 +285,7 @@
 
 <div class="card-wrap">
   <div class="card" id="card">
+    <div class="card-bar"></div>
     <header class="head">
       <div class="dots"><span></span><span></span><span></span></div>
       <h1 class="title editable" contenteditable="true" spellcheck="false">Pair Title</h1>
@@ -315,7 +304,7 @@
     <div class="grid" id="grid"></div>
     <footer class="foot">
       <div class="rule"></div>
-      <p class="credit editable" contenteditable="true" spellcheck="false">@YOUR_NAME</p>
+      <p class="credit editable" contenteditable="true" spellcheck="false"><span class="sparkle" contenteditable="false">✦</span>@YOUR_NAME</p>
     </footer>
   </div>
 </div>
@@ -498,6 +487,36 @@ function renderSlots() {
   slotCount.textContent = slots;
 }
 
+// ── 저장: gradient CSS 변수 → 실제 색상값 인라인 (html2canvas CSS var 미지원 보완) ──
+function inlineGradients() {
+  const restores = [];
+  // background: gradient 를 사용하는 실제 DOM 요소들
+  const bgEls = [
+    ...card.querySelectorAll('.card-bar, .rule, .title-line, .dots span'),
+  ];
+  for (const el of bgEls) {
+    const orig = el.style.background;
+    const computed = getComputedStyle(el).backgroundImage;
+    // backgroundImage 가 none 이면 backgroundColor 를 사용
+    const color = computed !== 'none' ? computed : getComputedStyle(el).backgroundColor;
+    el.style.background = color;
+    restores.push({ el, prop: 'background', orig });
+  }
+  // color 를 사용하는 요소 (sparkle ✦)
+  for (const el of card.querySelectorAll('.sparkle')) {
+    const orig = el.style.color;
+    el.style.color = getComputedStyle(el).color;
+    restores.push({ el, prop: 'color', orig });
+  }
+  return restores;
+}
+
+function restoreGradients(restores) {
+  for (const { el, prop, orig } of restores) {
+    el.style[prop] = orig;
+  }
+}
+
 // ── 저장: 이미지 슬롯을 canvas로 사전 크롭 (html2canvas의 CSS transform 해석 보완) ──
 function bakeImages() {
   const restores = [];
@@ -571,7 +590,10 @@ downloadBtn.addEventListener('click', async () => {
   // 1) 이미지 슬롯 사전 크롭 (CSS transform → 단순 fill)
   const restores = bakeImages();
 
-  // 2) exporting 클래스 → UI 요소 숨기기
+  // 2) gradient CSS 변수 인라인 (html2canvas CSS var 보완)
+  const gradientRestores = inlineGradients();
+
+  // 3) exporting 클래스 → UI 요소 숨기기
   card.classList.add('exporting');
 
   // 3) 폰트 로드 완료 대기
@@ -609,6 +631,7 @@ downloadBtn.addEventListener('click', async () => {
     alert('저장 오류: ' + err.message);
   } finally {
     unbakeImages(restores);
+    restoreGradients(gradientRestores);
     card.classList.remove('exporting');
     downloadBtn.disabled = false;
     downloadBtn.textContent = origText;
