@@ -231,6 +231,9 @@
   .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   .card.exporting .placeholder { display: none !important; }
   
+  /* 따옴표 숨기기 */
+  .card.exporting .qmark { display: none !important; }
+  
   /* html2canvas: ::after blur circle 숨기기 */
   .card.exporting::after { display: none !important; }
 
@@ -486,7 +489,6 @@ function renderSlots() {
 function inlineGradients() {
   const restores = [];
 
-  // JS에서 직접 현재 테마의 Hex 컬러값을 계산해버립니다. (가장 짙은색)
   const c1 = theme1Color.value;
   const c2 = theme2Color.value;
   const themeDeepHex = shade(avgHex(c1, c2), -0.25);
@@ -503,8 +505,8 @@ function inlineGradients() {
     restores.push({ el, prop: 'background', orig });
   }
 
-  // 2) 텍스트 그라디언트를 사용하던 기호들 (×, 따옴표) -> 투명화 풀고 고정 Hex Color 주입
-  const textEls = card.querySelectorAll('.names .x, .qmark');
+  // 2) 텍스트 그라디언트를 사용하던 기호들 (×) -> 투명화 풀고 고정 Hex Color 주입
+  const textEls = card.querySelectorAll('.names .x');
   for (const el of textEls) {
     restores.push({ el, prop: 'background', orig: el.style.background });
     restores.push({ el, prop: 'webkitBackgroundClip', orig: el.style.webkitBackgroundClip });
@@ -599,7 +601,7 @@ downloadBtn.addEventListener('click', async () => {
   // 1) 이미지 슬롯 사전 크롭
   const restores = bakeImages();
 
-  // 2) gradient 및 텍스트 렌더링 폴백 (✦, ×, " 요소에 강제 색상 부여)
+  // 2) gradient 및 텍스트 렌더링 폴백 (✦, × 요소에 강제 색상 부여)
   const gradientRestores = inlineGradients();
 
   // 3) exporting 클래스
