@@ -116,17 +116,12 @@
     background: var(--gradient); -webkit-background-clip: text; background-clip: text;
     color: transparent; font-weight: 600;
   }
+  
   .quote {
     text-align: center; font-family: 'Cormorant Garamond','Noto Sans KR',serif;
     font-size: 14px; line-height: 1.6; color: var(--ink-soft);
-    margin: 0 auto 36px; max-width: 75%; position: relative; padding: 0 22px;
+    margin: 0 auto 36px; max-width: 75%; position: relative;
   }
-  .qmark {
-    font-family: 'EB Garamond',serif; font-style: italic; font-size: 32px; line-height: 0;
-    background: var(--gradient); -webkit-background-clip: text; background-clip: text;
-    color: transparent; position: absolute; top: 14px;
-  }
-  .qmark.left { left: 0; } .qmark.right { right: 0; }
   .qtext { font-style: italic; }
 
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 36px; }
@@ -231,9 +226,6 @@
   .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   .card.exporting .placeholder { display: none !important; }
   
-  /* 따옴표 숨기기 */
-  .card.exporting .qmark { display: none !important; }
-  
   /* html2canvas: ::after blur circle 숨기기 */
   .card.exporting::after { display: none !important; }
 
@@ -291,9 +283,7 @@
       </p>
     </header>
     <p class="quote">
-      <span class="qmark left">"</span>
       <em class="qtext editable" contenteditable="true" spellcheck="false">여기에 페어를 표현하는 짧은 한 줄을 적어보세요.</em>
-      <span class="qmark right">"</span>
     </p>
     <div class="grid" id="grid"></div>
     <footer class="foot">
