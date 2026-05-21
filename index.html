@@ -224,13 +224,13 @@
   .editable:hover { background: rgba(0,0,0,0.03); }
   .editable:focus { background: rgba(255,235,200,0.5); box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
 
-  /* Export 전용 CSS - 오작동을 일으켰던 불필요한 폴백 스타일들 전부 제거 및 JS로 위임함 */
   .card.exporting * { transition: none !important; }
   .card.exporting .editable { background: transparent !important; box-shadow: none !important; }
   .card.exporting .slot { transform: none !important; box-shadow: none !important; }
   .card.exporting .remove-btn { display: none !important; }
   .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
   .card.exporting .placeholder { display: none !important; }
+  
   /* html2canvas: ::after blur circle 숨기기 */
   .card.exporting::after { display: none !important; }
 
@@ -319,6 +319,12 @@ const card         = document.getElementById('card');
 
 let slots = 6;
 const MIN_SLOTS = 1, MAX_SLOTS = 12;
+
+// ── colors (도구 함수 선언) ──────────────────────────────
+const ph  = h => { const c=h.replace('#',''); return {r:parseInt(c.slice(0,2),16),g:parseInt(c.slice(2,4),16),b:parseInt(c.slice(4,6),16)}; };
+const rh  = (r,g,b) => '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+const shade  = (hex,a) => { const {r,g,b}=ph(hex); return a>=0?rh(r+(255-r)*a,g+(255-g)*a,b+(255-b)*a):rh(r*(1+a),g*(1+a),b*(1+a)); };
+const avgHex = (h1,h2) => { const a=ph(h1),b=ph(h2); return rh((a.r+b.r)/2,(a.g+b.g)/2,(a.b+b.b)/2); };
 
 // ── slot ──────────────────────────────────────────────
 function createSlot() {
@@ -476,9 +482,16 @@ function renderSlots() {
   slotCount.textContent = slots;
 }
 
-// ── 저장: gradient CSS 변수 → 실제 색상값 인라인 보완 ──
+// ── 저장: gradient CSS 변수 → 실제 색상값 인라인 (html2canvas CSS var 미지원 보완) ──
 function inlineGradients() {
   const restores = [];
+
+  // JS에서 직접 현재 테마의 Hex 컬러값을 계산해버립니다. (가장 짙은색)
+  const c1 = theme1Color.value;
+  const c2 = theme2Color.value;
+  const themeDeepHex = shade(avgHex(c1, c2), -0.25);
+
+  // 1) background: gradient 를 사용하는 요소 처리
   const bgEls = [
     ...card.querySelectorAll('.card-bar, .rule, .title-line, .dots span'),
   ];
@@ -490,31 +503,26 @@ function inlineGradients() {
     restores.push({ el, prop: 'background', orig });
   }
 
-  // ★ 추가된 핵심 부분: html2canvas가 제대로 캡처하지 못하는 요소를 JS로 직접 칠해줌
-  // JS단에서 업데이트되는 --theme-deep 색상을 직접 가져옵니다.
-  const themeDeepHex = document.documentElement.style.getPropertyValue('--theme-deep').trim() || '#b56b80';
-  
-  // 이름 사이의 x, ✦반짝이, 따옴표, 빈 슬롯의 + 버튼 모두 찾기
-  const textEls = card.querySelectorAll('.names .x, .qmark, .slot .plus, .sparkle');
+  // 2) 텍스트 그라디언트를 사용하던 기호들 (×, 따옴표) -> 투명화 풀고 고정 Hex Color 주입
+  const textEls = card.querySelectorAll('.names .x, .qmark');
   for (const el of textEls) {
-    const origColor = el.style.color;
-    const origBg = el.style.background;
-    const origWebkitClip = el.style.webkitBackgroundClip;
-    const origClip = el.style.backgroundClip;
+    restores.push({ el, prop: 'background', orig: el.style.background });
+    restores.push({ el, prop: 'webkitBackgroundClip', orig: el.style.webkitBackgroundClip });
+    restores.push({ el, prop: 'backgroundClip', orig: el.style.backgroundClip });
+    restores.push({ el, prop: 'color', orig: el.style.color });
 
-    // 그라디언트 텍스트 효과를 제거하고, 실제 색상(Hex)으로 단일화 시킴
     el.style.background = 'none';
     el.style.webkitBackgroundClip = 'unset';
     el.style.backgroundClip = 'unset';
     el.style.color = themeDeepHex;
-
-    // 복구를 위해 원래 상태 저장
-    restores.push({ el, prop: 'background', orig: origBg });
-    restores.push({ el, prop: 'webkitBackgroundClip', orig: origWebkitClip });
-    restores.push({ el, prop: 'backgroundClip', orig: origClip });
-    restores.push({ el, prop: 'color', orig: origColor });
   }
 
+  // 3) Sparkle(✦) 컬러 주입
+  for (const el of card.querySelectorAll('.sparkle')) {
+    restores.push({ el, prop: 'color', orig: el.style.color });
+    el.style.color = themeDeepHex;
+  }
+  
   return restores;
 }
 
@@ -546,7 +554,6 @@ function bakeImages() {
     const dh = dispImg.naturalHeight * z * SCALE;
     ctx.drawImage(dispImg, cw/2 + tx - dw/2, ch/2 + ty - dh/2, dw, dh);
 
-    // disp → 단순 fill img로 교체
     dispImg.style.display = 'none';
     const expImg = document.createElement('img');
     expImg.className = 'exp';
@@ -567,12 +574,7 @@ function unbakeImages(restores) {
   }
 }
 
-// ── colors ─────────────────────────────────────────────
-const ph  = h => { const c=h.replace('#',''); return {r:parseInt(c.slice(0,2),16),g:parseInt(c.slice(2,4),16),b:parseInt(c.slice(4,6),16)}; };
-const rh  = (r,g,b) => '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
-const shade  = (hex,a) => { const {r,g,b}=ph(hex); return a>=0?rh(r+(255-r)*a,g+(255-g)*a,b+(255-b)*a):rh(r*(1+a),g*(1+a),b*(1+a)); };
-const avgHex = (h1,h2) => { const a=ph(h1),b=ph(h2); return rh((a.r+b.r)/2,(a.g+b.g)/2,(a.b+b.b)/2); };
-
+// ── 테마 컬러 업데이트 로직 ────────────────────────────────
 function updateTheme() {
   const c1=theme1Color.value, c2=theme2Color.value, avg=avgHex(c1,c2);
   const s=document.documentElement.style;
@@ -594,21 +596,19 @@ downloadBtn.addEventListener('click', async () => {
   const origText = downloadBtn.textContent;
   downloadBtn.textContent = '저장 중...';
 
-  // 1) 이미지 슬롯 사전 크롭 (CSS transform → 단순 fill)
+  // 1) 이미지 슬롯 사전 크롭
   const restores = bakeImages();
 
-  // 2) gradient CSS 변수 인라인 (html2canvas CSS var 보완)
+  // 2) gradient 및 텍스트 렌더링 폴백 (✦, ×, " 요소에 강제 색상 부여)
   const gradientRestores = inlineGradients();
 
-  // 3) exporting 클래스 → UI 요소 숨기기
+  // 3) exporting 클래스
   card.classList.add('exporting');
 
-  // 3) 폰트 로드 완료 대기
   try { await document.fonts.ready; } catch(e) {}
   await new Promise(r => setTimeout(r, 100));
 
   try {
-    // html2canvas: 브라우저 렌더링 엔진으로 직접 캡처 → 폰트 100% 정확
     const canvas = await html2canvas(card, {
       scale: 2,
       useCORS: true,
@@ -616,7 +616,6 @@ downloadBtn.addEventListener('click', async () => {
       backgroundColor: getComputedStyle(card).backgroundColor || '#ffffff',
       logging: false,
       removeContainer: true,
-      // 캡처 범위를 카드 영역으로 고정
       x: 0, y: 0,
       scrollX: 0, scrollY: 0,
     });
