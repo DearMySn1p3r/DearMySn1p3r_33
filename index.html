@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pair Card Maker</title>
+<title>Pair Card Maker - Album Edition (Sticker update)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
-    --theme-1: #e89aae;
-    --theme-2: #f6c8a8;
-    --theme-soft: #fbe4ea;
-    --theme-deep: #b56b80;
-    --bg: #f5f2ed;
-    --ink: #1d1d1f;
-    --ink-soft: #4a4a4d;
-    --muted: #9a948c;
-    --line: #e6e3dd;
-    --card: #ffffff;
+    --theme-1: #d6a4a4;
+    --theme-2: #e8d0c3;
+    --theme-soft: #f8ecea;
+    --theme-deep: #a87b7b;
+    --bg: #eeebe6;
+    --paper: #fcfbf9;
+    --photo-bg: #ffffff;
+    --ink: #2c2b29;
+    --ink-soft: #5a5753;
+    --muted: #a39e98;
+    --line: #e2dfd9;
     --gradient: linear-gradient(135deg, var(--theme-1), var(--theme-2));
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,22 +29,23 @@
     font-family: 'Inter', 'Noto Sans KR', sans-serif;
     font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
   }
-  body { min-height: 100vh; padding: 80px 24px 60px; }
+  body { min-height: 100vh; padding: 80px 24px 60px; overflow-x: hidden; }
 
+  /* ── 툴바 ── */
   .toolbar {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(255,255,255,0.94); backdrop-filter: blur(14px);
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line);
     border-radius: 999px; padding: 6px 8px;
-    display: flex; align-items: center; gap: 4px; z-index: 100;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.02);
+    display: flex; align-items: center; gap: 6px; z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05), 0 2px 6px rgba(0,0,0,0.02);
     flex-wrap: wrap; justify-content: center; max-width: calc(100% - 32px);
   }
   .tool-btn {
     background: transparent; border: none; color: var(--ink);
     font-family: inherit; font-size: 13px; font-weight: 500;
     padding: 8px 14px; border-radius: 999px; cursor: pointer;
-    transition: all 0.18s ease; white-space: nowrap;
+    transition: all 0.18s ease; white-space: nowrap; outline: none;
     display: inline-flex; align-items: center; gap: 6px;
   }
   .tool-btn:hover { background: var(--theme-soft); color: var(--theme-deep); }
@@ -51,229 +53,230 @@
   .tool-btn.primary:hover { filter: brightness(0.95); color: #fff; }
   .tool-btn:disabled { opacity: 0.4; cursor: wait; }
 
+  select.tool-btn { appearance: none; padding-right: 24px; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239a948c%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 8px auto; }
+
   .color-group {
-    display: flex; align-items: center; gap: 6px; padding: 4px 12px;
+    display: flex; align-items: center; gap: 4px; padding: 4px 10px;
     border-left: 1px solid var(--line); border-right: 1px solid var(--line);
   }
-  .color-label { font-size: 12px; color: var(--muted); font-weight: 500; }
   .color-swatch {
     width: 22px; height: 22px; border-radius: 50%;
     border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line);
     cursor: pointer; position: relative; overflow: hidden; transition: transform 0.15s;
   }
-  .color-swatch:hover { transform: scale(1.08); }
+  .color-swatch:hover { transform: scale(1.1); z-index: 2; }
   .color-swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .arrow { font-size: 11px; color: var(--muted); margin: 0 -1px; }
+  .swatch-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-right: 2px; }
 
-  .slot-controls {
-    display: flex; align-items: center; gap: 6px;
-    padding: 0 8px; border-right: 1px solid var(--line);
-  }
-  .icon-btn {
-    width: 28px; height: 28px; border-radius: 50%; border: none;
-    background: transparent; cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 16px; color: var(--ink); transition: background 0.15s;
-  }
-  .icon-btn:hover { background: var(--theme-soft); }
-  .count-badge { font-size: 12px; color: var(--muted); font-weight: 600; min-width: 18px; text-align: center; }
+  .divider { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 
-  .card-wrap { max-width: 860px; margin: 0 auto; }
+  /* ── 앨범 카드 ── */
+  .card-wrap { max-width: 860px; margin: 0 auto; position: relative; }
   .card {
-    background: var(--card); position: relative; border-radius: 8px;
-    padding: 64px 56px 48px;
-    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.12), 0 8px 20px -12px rgba(0,0,0,0.06);
+    background: var(--paper); position: relative; border-radius: 4px;
+    padding: 48px 52px 56px;
+    box-shadow: 0 20px 50px -10px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03);
     transition: background 0.3s ease; overflow: hidden;
   }
-  .card-bar {
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 3px; background: var(--gradient);
-    border-radius: 8px 8px 0 0; pointer-events: none;
-  }
-  .card::after {
-    content: ''; position: absolute; top: 22px; right: 22px;
-    width: 60px; height: 60px; border-radius: 50%;
-    background: var(--gradient); opacity: 0.12; filter: blur(20px); pointer-events: none;
+  
+  /* 내부 테두리 (테마 색상) */
+  .card::before {
+    content: ''; position: absolute; top: 16px; bottom: 16px; left: 16px; right: 16px;
+    border: 1px solid var(--theme-soft); pointer-events: none; border-radius: 2px; z-index: 2;
   }
 
-  .head { text-align: center; margin-bottom: 30px; position: relative; }
-  .dots { display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 22px; }
-  .dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--gradient); }
-  .dots span:nth-child(1), .dots span:nth-child(3) { opacity: 0.4; }
-  .dots span:nth-child(2) { width: 6px; height: 6px; }
+  /* ── 스티커 (자유 배치 / 회전 / 크기) ── */
+  .sticker {
+    position: absolute; transform: translate(-50%, -50%);
+    cursor: grab; z-index: 50; user-select: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .sticker.dragging { cursor: grabbing; z-index: 51; }
+  
+  /* 스티커 이미지 (너비와 각도로 조절됨) */
+  .sticker img {
+    display: block; pointer-events: none;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08));
+    transition: width 0.05s ease-out, transform 0.05s ease-out;
+  }
+  .sticker.dragging img { transition: none; }
+  .sticker:hover img { outline: 1.5px dashed rgba(0,0,0,0.2); outline-offset: 4px; }
+
+  /* 스티커 컨트롤 바 */
+  .sticker-ctrls {
+    position: absolute; top: -38px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; background: rgba(0,0,0,0.75); padding: 4px;
+    border-radius: 6px; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    white-space: nowrap; z-index: 52;
+  }
+  .sticker:hover .sticker-ctrls, .sticker:active .sticker-ctrls { opacity: 1; pointer-events: auto; }
+  .sc-btn {
+    background: transparent; border: none; color: #fff; font-size: 14px;
+    width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .sc-btn:hover { background: rgba(255,255,255,0.25); }
+  .sc-btn.del { color: #ff8a8a; }
+
+  /* ── 다이어리 메타 헤더 (테마 색상 적용) ── */
+  .diary-meta {
+    display: flex; justify-content: space-between;
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+    color: var(--theme-deep); letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 40px; border-bottom: 1px dashed var(--theme-soft);
+    padding-bottom: 12px; position: relative; z-index: 2; opacity: 0.8;
+  }
+
+  /* ── 헤더 타이틀 ── */
+  .head { text-align: center; margin-bottom: 32px; position: relative; z-index: 2; }
   .title {
-    font-family: 'EB Garamond', serif; font-style: italic; font-weight: 500;
-    font-size: clamp(40px, 5.5vw, 64px); line-height: 1.05; letter-spacing: -0.005em;
-    color: var(--ink); outline: none; display: inline-block; padding: 0 4px; border-radius: 3px;
+    font-family: 'EB Garamond', serif; font-style: normal; font-weight: 500;
+    font-size: clamp(40px, 5.5vw, 60px); line-height: 1.1; letter-spacing: -0.02em;
+    color: var(--ink); outline: none; display: inline-block; padding: 0 4px;
   }
-  .title-line { width: 48px; height: 1.5px; background: var(--gradient); margin: 14px auto 0; border-radius: 1px; }
+  .title-line { width: 60px; height: 2px; background: var(--gradient); margin: 12px auto 0; border-radius: 2px; opacity: 0.8; }
   .names {
-    margin-top: 18px; font-family: 'Cormorant Garamond','Noto Sans KR',serif;
-    font-style: italic; font-weight: 500; font-size: 17px; color: var(--ink-soft); letter-spacing: 0.02em;
+    margin-top: 14px; font-family: 'Cormorant Garamond','Noto Sans KR',serif;
+    font-style: italic; font-weight: 500; font-size: 18px; color: var(--ink-soft); letter-spacing: 0.03em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .names .x {
-    font-style: normal; margin: 0 8px;
-    background: var(--gradient); -webkit-background-clip: text; background-clip: text;
-    color: transparent; font-weight: 600;
+  .names .x { font-style: normal; font-size: 15px; background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 600; margin: 0 4px; }
+
+  /* ── 인용구 ── */
+  .quote-wrap { text-align: center; margin-bottom: 48px; position: relative; z-index: 2; }
+  .quote {
+    display: inline-block; position: relative;
+    font-family: 'Cormorant Garamond','Noto Sans KR',serif;
+    font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 75%; padding: 0 20px;
+  }
+  .qtext { font-style: normal; font-weight: 400; }
+  .quote::before { content: '“'; position: absolute; left: -8px; top: -10px; font-size: 32px; color: var(--theme-deep); opacity: 0.25; font-family: 'EB Garamond', serif; }
+  .quote::after { content: '”'; position: absolute; right: -8px; bottom: -20px; font-size: 32px; color: var(--theme-deep); opacity: 0.25; font-family: 'EB Garamond', serif; }
+
+  /* ── 폴라로이드 사진 슬롯 ── */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 20px; margin-bottom: 48px; position: relative; z-index: 2; }
+  .slot {
+    position: relative; background: var(--photo-bg);
+    padding: 8px 8px 28px 8px; border-radius: 2px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.2s;
   }
   
-  .quote {
-    text-align: center; font-family: 'Cormorant Garamond','Noto Sans KR',serif;
-    font-size: 14px; line-height: 1.6; color: var(--ink-soft);
-    margin: 0 auto 36px; max-width: 75%; position: relative;
+  /* 마스킹 테이프 (테마 색상 살짝 혼합) */
+  .slot::after {
+    content: ''; position: absolute; top: -6px; left: 50%; width: 38px; height: 14px;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0.9), var(--theme-soft)); 
+    backdrop-filter: blur(2px); border: 1px solid rgba(0,0,0,0.03); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transform: translateX(-50%) rotate(-2deg); z-index: 10; pointer-events: none;
   }
-  .qtext { font-style: italic; }
+  .slot:nth-child(even)::after { transform: translateX(-50%) rotate(3deg); width: 42px; }
+  .slot:nth-child(3n)::after { transform: translateX(-50%) rotate(-1deg); top: -8px; }
+  .slot:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 24px rgba(0,0,0,0.08); z-index: 5; }
 
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 36px; }
-
-  .slot {
-    position: relative; aspect-ratio: 1/1; background: #ece8e1;
-    border-radius: 4px; overflow: hidden; cursor: pointer; transition: all 0.2s ease;
-  }
-  .slot::before {
-    content: ''; position: absolute; inset: 0; background: var(--gradient);
-    opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 0;
-  }
-  .slot:not(.has-image):hover::before { opacity: 0.08; }
-  .slot:not(.has-image):hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(0,0,0,0.15); }
-  .slot.has-image { background: #000; }
-  .slot.has-image:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -8px rgba(0,0,0,0.15); }
-
-  .img-wrap { position: absolute; inset: 0; overflow: hidden; }
-
-  .slot img.disp {
-    position: absolute; top: 50%; left: 50%;
-    width: auto; height: auto; max-width: none; max-height: none;
-    display: block; transform-origin: center center;
-    user-select: none; -webkit-user-drag: none; pointer-events: auto;
-    transition: transform 0.04s linear;
-  }
-  .slot img.exp {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    display: none; pointer-events: none;
-  }
-
+  /* 사진 영역 (테마 소프트 적용) */
+  .img-wrap { position: relative; width: 100%; aspect-ratio: 1/1; background: var(--theme-soft); border-radius: 1px; overflow: hidden; box-shadow: inset 0 2px 6px rgba(0,0,0,0.04); }
+  .slot img.disp { position: absolute; top: 50%; left: 50%; width: auto; height: auto; max-width: none; max-height: none; display: block; transform-origin: center center; user-select: none; -webkit-user-drag: none; pointer-events: auto; transition: transform 0.04s linear; }
+  .slot img.exp { position: absolute; inset: 0; width: 100%; height: 100%; display: none; pointer-events: none; }
   .slot.zoomed img.disp { cursor: grab; }
   .slot.dragging img.disp { cursor: grabbing; transition: none; }
 
-  .slot .placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; color: #b5afa6; pointer-events: none; transition: color 0.2s; z-index: 1;
-  }
-  .slot:hover .placeholder { color: var(--theme-deep); }
-  .slot .plus {
-    font-size: 28px; font-weight: 200; line-height: 1;
-    background: var(--gradient); -webkit-background-clip: text; background-clip: text;
-    color: transparent; opacity: 0.5; transition: opacity 0.2s;
-  }
-  .slot:hover .plus { opacity: 1; }
-  .slot .ph-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; }
+  .slot .placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--theme-deep); opacity: 0.6; pointer-events: none; transition: opacity 0.2s; z-index: 1; }
+  .slot:hover .placeholder { opacity: 1; }
+  .slot .plus { font-size: 26px; font-weight: 300; line-height: 1; }
+  .slot .ph-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500; }
   .slot.has-image .placeholder { display: none; }
 
-  .zoom-bar {
-    position: absolute; bottom: 8px; left: 10px; right: 10px; height: 26px;
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border-radius: 14px; padding: 0 10px;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 3;
-  }
+  .zoom-bar { position: absolute; bottom: 36px; left: 16px; right: 16px; height: 26px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 14px; padding: 0 10px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 3; }
   .slot.has-image:hover .zoom-bar { opacity: 1; pointer-events: auto; }
   @media (hover: none) { .slot.has-image .zoom-bar { opacity: 1; pointer-events: auto; } }
-  .zoom-bar input[type=range] {
-    flex: 1; -webkit-appearance: none; appearance: none; background: transparent; height: 14px; margin: 0;
-  }
+  .zoom-bar input[type=range] { flex: 1; -webkit-appearance: none; appearance: none; background: transparent; height: 14px; margin: 0; }
   .zoom-bar input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.3); }
-  .zoom-bar input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.3); }
-  .zoom-bar input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none; width: 12px; height: 12px;
-    border-radius: 50%; background: #fff; cursor: pointer; margin-top: -4.5px;
-  }
-  .zoom-bar input[type=range]::-moz-range-thumb {
-    width: 12px; height: 12px; border-radius: 50%; background: #fff; cursor: pointer; border: none;
-  }
+  .zoom-bar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -4.5px; }
   .zoom-ico { color: rgba(255,255,255,0.85); font-size: 11px; cursor: pointer; user-select: none; padding: 2px; }
 
-  .slot .remove-btn {
-    position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
-    border-radius: 50%; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-    color: #fff; border: none; cursor: pointer;
-    display: none; align-items: center; justify-content: center;
-    font-size: 13px; line-height: 1; transition: background 0.15s; z-index: 4;
-  }
+  .slot .remove-btn { position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); color: #fff; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 13px; line-height: 1; z-index: 4; }
   .slot .remove-btn:hover { background: #000; }
   .slot.has-image:hover .remove-btn { display: flex; }
   @media (hover: none) { .slot.has-image .remove-btn { display: flex; } }
 
   .slot input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
   .slot.has-image input[type="file"] { display: none; }
-  .slot.dragover { box-shadow: inset 0 0 0 2px var(--theme-deep); }
-  .slot.dragover::before { opacity: 0.18; }
+  .slot.dragover { transform: scale(1.02); box-shadow: 0 0 0 2px var(--theme-deep); }
 
-  .foot { text-align: center; }
-  .rule { width: 48px; height: 1.5px; background: var(--gradient); margin: 0 auto 14px; border-radius: 1px; }
-  .credit { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; font-family: 'Inter',sans-serif; }
-  .sparkle { color: var(--theme-deep); margin-right: 6px; }
+  /* ── 푸터 크레딧 ── */
+  .foot { text-align: center; position: relative; z-index: 2; }
+  .credit { font-size: 10px; color: var(--theme-deep); letter-spacing: 0.15em; font-family: 'Inter',sans-serif; text-transform: uppercase; opacity: 0.8; }
 
-  .editable { outline: none; border-radius: 3px; padding: 1px 3px; transition: background 0.15s; }
+  .editable { outline: none; border-radius: 3px; padding: 2px 4px; transition: background 0.15s; }
   .editable:hover { background: rgba(0,0,0,0.03); }
   .editable:focus { background: rgba(255,235,200,0.5); box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
 
+  /* ── 내보내기 ── */
   .card.exporting * { transition: none !important; }
   .card.exporting .editable { background: transparent !important; box-shadow: none !important; }
-  .card.exporting .slot { transform: none !important; box-shadow: none !important; }
-  .card.exporting .remove-btn { display: none !important; }
-  .card.exporting .zoom-bar { display: none !important; opacity: 0 !important; pointer-events: none !important; }
-  .card.exporting .placeholder { display: none !important; }
-  
-  /* html2canvas: ::after blur circle 숨기기 */
-  .card.exporting::after { display: none !important; }
+  .card.exporting .slot { transform: none !important; box-shadow: 0 4px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03) !important; }
+  .card.exporting .remove-btn, .card.exporting .zoom-bar, .card.exporting .placeholder { display: none !important; }
+  .card.exporting .sticker-ctrls { display: none !important; }
+  .card.exporting .sticker img { outline: none !important; }
 
   .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.7; }
 
-  @media (max-width: 680px) {
-    body { padding: 90px 14px 40px; }
-    .card { padding: 48px 28px 36px; }
-    .grid { grid-template-columns: repeat(2,1fr); }
-    .title { font-size: 40px; }
-    .quote { max-width: 92%; padding: 0 18px; }
-    .toolbar { padding: 6px; gap: 2px; }
+  @media (max-width: 768px) {
+    body { padding: 100px 14px 40px; }
+    .card { padding: 36px 24px 40px; }
+    .grid { grid-template-columns: repeat(2,1fr); gap: 16px 12px; }
+    .title { font-size: 36px; }
+    .quote { max-width: 90%; font-size: 14px; }
+    .toolbar { padding: 6px; gap: 4px; }
     .tool-btn { padding: 6px 10px; font-size: 12px; }
-    .color-group { padding: 2px 6px; gap: 4px; }
   }
 </style>
 </head>
 <body>
 
 <div class="toolbar" id="toolbar">
+  <!-- 테마 프리셋 -->
+  <select class="tool-btn" id="themePreset">
+    <option value="cotton" selected>코튼 캔디</option>
+    <option value="vintage">빈티지 필름</option>
+    <option value="midnight">미드나잇</option>
+    <option value="nature">그리너리</option>
+  </select>
+
+  <!-- 그라디언트 테마 & 배경색 -->
   <div class="color-group">
-    <span class="color-label">테마</span>
-    <label class="color-swatch" id="theme1Swatch">
-      <input type="color" id="theme1Color" value="#e89aae" />
-    </label>
-    <span class="arrow">→</span>
-    <label class="color-swatch" id="theme2Swatch">
-      <input type="color" id="theme2Color" value="#f6c8a8" />
-    </label>
-    <span class="color-label" style="margin-left:6px">배경</span>
-    <label class="color-swatch" id="bgSwatch" style="background:#ffffff">
-      <input type="color" id="bgColor" value="#ffffff" />
-    </label>
+    <span class="swatch-label">테마</span>
+    <label class="color-swatch" id="theme1Swatch"><input type="color" id="theme1Color" value="#d6a4a4" /></label>
+    <label class="color-swatch" id="theme2Swatch"><input type="color" id="theme2Color" value="#e8d0c3" /></label>
+    <div class="divider"></div>
+    <span class="swatch-label">배경</span>
+    <label class="color-swatch" id="bgSwatch"><input type="color" id="bgColor" value="#fcfbf9" /></label>
   </div>
-  <div class="slot-controls">
-    <button class="icon-btn" id="removeSlot">−</button>
-    <span class="count-badge" id="slotCount">6</span>
-    <button class="icon-btn" id="addSlot">+</button>
+
+  <div class="divider"></div>
+
+  <!-- 액션 버튼 -->
+  <button class="tool-btn" id="addStickerBtn">스티커 추가</button>
+  <input type="file" id="stickerFile" accept="image/*" style="display:none;" />
+  
+  <div class="color-group" style="padding:0 6px;">
+    <button class="tool-btn" style="padding:4px 8px;" id="removeSlot">−</button>
+    <span style="font-size:12px; font-weight:600; width:16px; text-align:center;" id="slotCount">6</span>
+    <button class="tool-btn" style="padding:4px 8px;" id="addSlot">+</button>
   </div>
-  <button class="tool-btn" id="resetBtn">초기화</button>
+
   <button class="tool-btn primary" id="downloadBtn">↓ 이미지 저장</button>
 </div>
 
 <div class="card-wrap">
   <div class="card" id="card">
-    <div class="card-bar"></div>
+    
+    <div class="diary-meta">
+      <span class="editable" contenteditable="true" spellcheck="false">PAGE. 01</span>
+      <span class="editable" contenteditable="true" spellcheck="false">DATE. YYYY. MM. DD</span>
+    </div>
+
     <header class="head">
-      <div class="dots"><span></span><span></span><span></span></div>
       <h1 class="title editable" contenteditable="true" spellcheck="false">Pair Title</h1>
       <div class="title-line"></div>
       <p class="names">
@@ -282,362 +285,350 @@
         <span class="editable" contenteditable="true" spellcheck="false">Character B</span>
       </p>
     </header>
-    <p class="quote">
-      <em class="qtext editable" contenteditable="true" spellcheck="false">여기에 페어를 표현하는 짧은 한 줄을 적어보세요.</em>
-    </p>
+
+    <div class="quote-wrap">
+      <p class="quote">
+        <span class="qtext editable" contenteditable="true" spellcheck="false">페어의 캐치프레이즈를 적어주세요</span>
+      </p>
+    </div>
+
     <div class="grid" id="grid"></div>
+
     <footer class="foot">
-      <div class="rule"></div>
-      <p class="credit editable" contenteditable="true" spellcheck="false"><span class="sparkle" contenteditable="false">✦</span>@YOUR_NAME</p>
+      <p class="credit editable" contenteditable="true" spellcheck="false">@YOUR_NAME</p>
     </footer>
+
   </div>
 </div>
 
-<p class="hint">슬롯을 클릭하거나 드래그앤드롭으로 이미지를 올려보세요. 이미지에 마우스를 올리면 줌 슬라이더가 나타나고, 확대된 이미지는 드래그해서 위치 조정할 수 있어요.</p>
+<p class="hint">
+  <strong>사진 슬롯</strong>: 클릭해 이미지를 넣고 확대/이동해보세요.<br>
+  <strong>스티커 조작</strong>: [마우스 휠] 크기 조절 / [Shift + 마우스 휠] 회전 변경 / ↺ ↻ 버튼 회전
+</p>
 
 <script>
 const grid         = document.getElementById('grid');
+const card         = document.getElementById('card');
+const downloadBtn  = document.getElementById('downloadBtn');
+
 const theme1Color  = document.getElementById('theme1Color');
 const theme2Color  = document.getElementById('theme2Color');
+const bgColor      = document.getElementById('bgColor');
+
 const theme1Swatch = document.getElementById('theme1Swatch');
 const theme2Swatch = document.getElementById('theme2Swatch');
-const bgColor      = document.getElementById('bgColor');
 const bgSwatch     = document.getElementById('bgSwatch');
-const downloadBtn  = document.getElementById('downloadBtn');
-const resetBtn     = document.getElementById('resetBtn');
+
+const themePreset  = document.getElementById('themePreset');
+const addStickerBtn= document.getElementById('addStickerBtn');
+const stickerFile  = document.getElementById('stickerFile');
+
 const addSlotBtn   = document.getElementById('addSlot');
 const removeSlotBtn= document.getElementById('removeSlot');
 const slotCount    = document.getElementById('slotCount');
-const card         = document.getElementById('card');
 
 let slots = 6;
 const MIN_SLOTS = 1, MAX_SLOTS = 12;
 
-// ── colors (도구 함수 선언) ──────────────────────────────
+// ── 유틸 함수 ──
 const ph  = h => { const c=h.replace('#',''); return {r:parseInt(c.slice(0,2),16),g:parseInt(c.slice(2,4),16),b:parseInt(c.slice(4,6),16)}; };
 const rh  = (r,g,b) => '#'+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
 const shade  = (hex,a) => { const {r,g,b}=ph(hex); return a>=0?rh(r+(255-r)*a,g+(255-g)*a,b+(255-b)*a):rh(r*(1+a),g*(1+a),b*(1+a)); };
 const avgHex = (h1,h2) => { const a=ph(h1),b=ph(h2); return rh((a.r+b.r)/2,(a.g+b.g)/2,(a.b+b.b)/2); };
 
-// ── slot ──────────────────────────────────────────────
-function createSlot() {
-  const slot = document.createElement('div');
-  slot.className = 'slot';
-  slot.innerHTML = `
-    <div class="img-wrap"></div>
-    <div class="placeholder"><div class="plus">+</div><div class="ph-label">image</div></div>
-    <input type="file" accept="image/*" />
-    <div class="zoom-bar">
-      <span class="zoom-ico" data-act="out">−</span>
-      <input type="range" min="1" max="3" step="0.05" value="1" />
-      <span class="zoom-ico" data-act="in">+</span>
-    </div>
-    <button class="remove-btn">×</button>`;
+// ── 테마 프리셋 ──
+const presets = {
+  cotton: { t1:'#d6a4a4', t2:'#e8d0c3', bg:'#fcfbf9' },
+  vintage:{ t1:'#b58363', t2:'#e0c097', bg:'#f4ede4' },
+  midnight:{ t1:'#4a5b7c', t2:'#7f748c', bg:'#f0f2f5' },
+  nature: { t1:'#84a58a', t2:'#d4dbba', bg:'#f7f8f3' }
+};
 
-  const fi = slot.querySelector('input[type=file]');
-  const rb = slot.querySelector('.remove-btn');
-  const zr = slot.querySelector('.zoom-bar input[type=range]');
+themePreset.addEventListener('change', (e) => {
+  const p = presets[e.target.value];
+  if(p) {
+    theme1Color.value = p.t1; theme2Color.value = p.t2; bgColor.value = p.bg;
+    updateTheme();
+  }
+});
 
-  fi.addEventListener('change', e => { if (e.target.files[0]) loadImage(slot, e.target.files[0]); });
-  rb.addEventListener('click',  e => { e.stopPropagation(); e.preventDefault(); clearSlot(slot); });
-  zr.addEventListener('input',  e => setSlotZoom(slot, parseFloat(e.target.value)));
-  zr.addEventListener('click',  e => e.stopPropagation());
+function updateTheme() {
+  const c1 = theme1Color.value, c2 = theme2Color.value, avg = avgHex(c1,c2);
+  const s = document.documentElement.style;
+  s.setProperty('--theme-1', c1); s.setProperty('--theme-2', c2);
+  s.setProperty('--theme-soft', shade(avg,0.82)); s.setProperty('--theme-deep', shade(avg,-0.25));
+  s.setProperty('--paper', bgColor.value);
+  
+  theme1Swatch.style.background = `linear-gradient(135deg,${c1},${c2})`;
+  theme2Swatch.style.background = c2;
+  bgSwatch.style.background = bgColor.value;
+}
+[theme1Color, theme2Color, bgColor].forEach(el => el.addEventListener('input', updateTheme));
 
-  slot.querySelectorAll('.zoom-ico').forEach(ico => {
-    ico.addEventListener('click', e => {
+// ── 스티커 기능 (회전, 크기, 이동 구현) ──
+addStickerBtn.addEventListener('click', () => stickerFile.click());
+stickerFile.addEventListener('change', e => {
+  if (e.target.files[0]) {
+    const reader = new FileReader();
+    reader.onload = ev => createSticker(ev.target.result);
+    reader.readAsDataURL(e.target.files[0]);
+  }
+  e.target.value = '';
+});
+
+function createSticker(src) {
+  const imgTemp = new Image();
+  imgTemp.src = src;
+  imgTemp.onload = () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'sticker';
+    
+    // 중앙 근처 임의 배치
+    const rx = (card.offsetWidth / 2) + (Math.random() * 40 - 20);
+    const ry = (card.offsetHeight / 2) + (Math.random() * 40 - 20);
+    
+    let startWidth = imgTemp.naturalWidth;
+    if(startWidth > 200) startWidth = 200; // 초기 최대 너비 제한
+
+    wrap.dataset.x = rx; 
+    wrap.dataset.y = ry;
+    wrap.dataset.w = startWidth; // 너비로 크기 관리
+    wrap.dataset.r = 0;          // 각도(rotate)
+
+    wrap.style.left = `${rx}px`;
+    wrap.style.top = `${ry}px`;
+
+    wrap.innerHTML = `
+      <div class="sticker-ctrls">
+        <button class="sc-btn" data-act="rotL" title="반시계 회전">↺</button>
+        <button class="sc-btn" data-act="rotR" title="시계 회전">↻</button>
+        <button class="sc-btn del" data-act="del" title="삭제">×</button>
+      </div>
+      <img src="${src}" style="width: ${startWidth}px; transform: rotate(0deg);">
+    `;
+
+    card.appendChild(wrap);
+    makeStickerDraggable(wrap);
+  };
+}
+
+function makeStickerDraggable(wrap) {
+  const img = wrap.querySelector('img');
+  let sx=0, sy=0, stx=0, sty=0, active=false;
+
+  // 상태 업데이트 함수 (크기, 각도 적용)
+  const updateProps = () => {
+    img.style.width = `${wrap.dataset.w}px`;
+    img.style.transform = `rotate(${wrap.dataset.r}deg)`;
+  };
+
+  // 상단 컨트롤 바 버튼 동작
+  wrap.querySelectorAll('.sc-btn').forEach(btn => {
+    btn.addEventListener('mousedown', e => e.stopPropagation());
+    btn.addEventListener('touchstart', e => e.stopPropagation(), {passive:false});
+    btn.addEventListener('click', e => {
       e.stopPropagation();
-      const minZ = parseFloat(slot.dataset.minZoom || 1);
-      const step = minZ * 0.2;
-      const next = ico.dataset.act === 'in'
-        ? Math.min(minZ * 3, parseFloat(zr.value) + step)
-        : Math.max(minZ,     parseFloat(zr.value) - step);
-      zr.value = next; setSlotZoom(slot, next);
+      const act = btn.dataset.act;
+      if(act === 'del') { wrap.remove(); return; }
+      if(act === 'rotL') wrap.dataset.r = parseFloat(wrap.dataset.r) - 15;
+      if(act === 'rotR') wrap.dataset.r = parseFloat(wrap.dataset.r) + 15;
+      updateProps();
     });
   });
 
-  slot.addEventListener('wheel', e => {
-    if (!slot.classList.contains('has-image')) return;
+  // 드래그(이동) 로직
+  const down = e => {
+    if(e.target.closest('.sticker-ctrls')) return;
+    active = true;
+    const ev = e.touches ? e.touches[0] : e;
+    sx = ev.clientX; sy = ev.clientY;
+    stx = parseFloat(wrap.dataset.x); sty = parseFloat(wrap.dataset.y);
+    wrap.classList.add('dragging');
+    
+    // 클릭 시 가장 위로 올라오게 z-index 조정
+    document.querySelectorAll('.sticker').forEach(s => s.style.zIndex = 50);
+    wrap.style.zIndex = 51;
+    e.preventDefault(); 
+  };
+  
+  const move = e => {
+    if(!active) return;
+    const ev = e.touches ? e.touches[0] : e;
+    const dx = ev.clientX - sx, dy = ev.clientY - sy;
+    wrap.dataset.x = stx + dx; wrap.dataset.y = sty + dy;
+    wrap.style.left = `${wrap.dataset.x}px`; wrap.style.top = `${wrap.dataset.y}px`;
+  };
+
+  const up = () => { active = false; wrap.classList.remove('dragging'); };
+
+  wrap.addEventListener('mousedown', down);
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+
+  wrap.addEventListener('touchstart', down, {passive:false});
+  document.addEventListener('touchmove', move, {passive:false});
+  document.addEventListener('touchend', up);
+
+  // 마우스 휠 로직 (크기 및 회전 조절)
+  wrap.addEventListener('wheel', e => {
     e.preventDefault();
-    const minZ = parseFloat(slot.dataset.minZoom || 1);
-    const next = Math.max(minZ, Math.min(minZ * 3, parseFloat(zr.value) + e.deltaY * -0.002));
-    zr.value = next; setSlotZoom(slot, next);
-  }, { passive: false });
+    if(e.shiftKey) {
+        // Shift + 휠 : 각도 회전
+        let r = parseFloat(wrap.dataset.r);
+        r += e.deltaY > 0 ? 10 : -10;
+        wrap.dataset.r = r;
+    } else {
+        // 일반 휠 : 크기 조절
+        let w = parseFloat(wrap.dataset.w);
+        w = Math.max(40, Math.min(1000, w - e.deltaY * 0.5));
+        wrap.dataset.w = w;
+    }
+    updateProps();
+  }, {passive:false});
+}
+
+// ── 슬롯 기능 (이미지 삽입) ──
+function createSlot() {
+  const slot = document.createElement('div'); slot.className = 'slot';
+  slot.innerHTML = `
+    <div class="img-wrap"><div class="placeholder"><div class="plus">+</div><div class="ph-label">photo</div></div></div>
+    <input type="file" accept="image/*" />
+    <div class="zoom-bar">
+      <span class="zoom-ico" data-act="out">−</span><input type="range" min="1" max="3" step="0.05" value="1" /><span class="zoom-ico" data-act="in">+</span>
+    </div>
+    <button class="remove-btn">×</button>`;
+  const fi = slot.querySelector('input[type=file]'), rb = slot.querySelector('.remove-btn'), zr = slot.querySelector('input[type=range]');
+  
+  fi.addEventListener('change', e => { if (e.target.files[0]) loadImage(slot, e.target.files[0]); });
+  rb.addEventListener('click',  e => { e.stopPropagation(); clearSlot(slot); });
+  zr.addEventListener('input',  e => setSlotZoom(slot, parseFloat(e.target.value)));
+  zr.addEventListener('click',  e => e.stopPropagation());
+
+  slot.querySelectorAll('.zoom-ico').forEach(ico => ico.addEventListener('click', e => {
+    e.stopPropagation(); const minZ = parseFloat(slot.dataset.minZoom||1); const step = minZ*0.2;
+    const n = ico.dataset.act==='in' ? Math.min(minZ*3, parseFloat(zr.value)+step) : Math.max(minZ, parseFloat(zr.value)-step);
+    zr.value = n; setSlotZoom(slot, n);
+  }));
+  slot.addEventListener('wheel', e => {
+    if (!slot.classList.contains('has-image')) return; e.preventDefault();
+    const minZ = parseFloat(slot.dataset.minZoom||1); const n = Math.max(minZ, Math.min(minZ*3, parseFloat(zr.value)+e.deltaY*-0.002));
+    zr.value = n; setSlotZoom(slot, n);
+  }, {passive:false});
 
   setupPan(slot);
-
-  slot.addEventListener('dragenter', e => { e.preventDefault(); slot.classList.add('dragover'); });
-  slot.addEventListener('dragover',  e => e.preventDefault());
-  slot.addEventListener('dragleave', e => { if (e.target === slot) slot.classList.remove('dragover'); });
-  slot.addEventListener('drop', e => {
-    e.preventDefault(); slot.classList.remove('dragover');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('image/')) loadImage(slot, f);
-  });
+  slot.addEventListener('dragenter', e=>{e.preventDefault();slot.classList.add('dragover');});
+  slot.addEventListener('dragover', e=>e.preventDefault());
+  slot.addEventListener('dragleave', e=>{if(e.target===slot)slot.classList.remove('dragover');});
+  slot.addEventListener('drop', e=>{ e.preventDefault();slot.classList.remove('dragover'); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/'))loadImage(slot,f); });
   return slot;
-}
-
-// ── transform ──────────────────────────────────────────
-function applyTransform(slot) {
-  const img = slot.querySelector('img.disp');
-  if (!img) return;
-  const z  = parseFloat(slot.dataset.zoom || 1);
-  const tx = parseFloat(slot.dataset.tx   || 0);
-  const ty = parseFloat(slot.dataset.ty   || 0);
-  img.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${z})`;
-}
-
-function clampTranslate(slot) {
-  const img = slot.querySelector('img.disp');
-  if (!img) return;
-  const z  = parseFloat(slot.dataset.zoom || 1);
-  const sr = slot.getBoundingClientRect();
-  const maxX = Math.max(0, (img.naturalWidth  * z - sr.width)  / 2 - 1);
-  const maxY = Math.max(0, (img.naturalHeight * z - sr.height) / 2 - 1);
-  slot.dataset.tx = Math.max(-maxX, Math.min(maxX, parseFloat(slot.dataset.tx || 0)));
-  slot.dataset.ty = Math.max(-maxY, Math.min(maxY, parseFloat(slot.dataset.ty || 0)));
-}
-
-function setSlotZoom(slot, zoom) {
-  const minZ = parseFloat(slot.dataset.minZoom || 1);
-  slot.dataset.zoom = zoom;
-  if (zoom <= minZ + 0.001) {
-    slot.dataset.tx = 0; slot.dataset.ty = 0; slot.classList.remove('zoomed');
-  } else {
-    slot.classList.add('zoomed'); clampTranslate(slot);
-  }
-  applyTransform(slot);
 }
 
 function setupPan(slot) {
   let sx=0, sy=0, stx=0, sty=0, active=false;
-  const dn = (cx,cy,ev) => {
-    if (!slot.classList.contains('has-image')) return;
-    if (parseFloat(slot.dataset.zoom||1) <= parseFloat(slot.dataset.minZoom||1)+0.001) return;
-    active=true; sx=cx; sy=cy;
-    stx=parseFloat(slot.dataset.tx||0); sty=parseFloat(slot.dataset.ty||0);
-    slot.classList.add('dragging'); ev.preventDefault();
-  };
-  const mv = (cx,cy,ev) => {
-    if (!active) return;
-    slot.dataset.tx = stx+(cx-sx); slot.dataset.ty = sty+(cy-sy);
-    clampTranslate(slot); applyTransform(slot); ev.preventDefault();
-  };
-  const up = () => { if(!active) return; active=false; slot.classList.remove('dragging'); };
-
-  slot.addEventListener('mousedown', e => { if (e.target.closest('.zoom-bar,.remove-btn')) return; dn(e.clientX,e.clientY,e); });
-  document.addEventListener('mousemove', e => mv(e.clientX,e.clientY,e));
-  document.addEventListener('mouseup', up);
-  slot.addEventListener('touchstart', e => { if(e.target.closest('.zoom-bar,.remove-btn')) return; dn(e.touches[0].clientX,e.touches[0].clientY,e); },{passive:false});
-  slot.addEventListener('touchmove',  e => mv(e.touches[0].clientX,e.touches[0].clientY,e),{passive:false});
-  slot.addEventListener('touchend', up);
+  const dn=e=>{ if(!slot.classList.contains('has-image')||parseFloat(slot.dataset.zoom||1)<=parseFloat(slot.dataset.minZoom||1)+0.001)return; active=true; const ev=e.touches?e.touches[0]:e; sx=ev.clientX; sy=ev.clientY; stx=parseFloat(slot.dataset.tx||0); sty=parseFloat(slot.dataset.ty||0); slot.classList.add('dragging'); e.preventDefault(); };
+  const mv=e=>{ if(!active)return; const ev=e.touches?e.touches[0]:e; slot.dataset.tx=stx+(ev.clientX-sx); slot.dataset.ty=sty+(ev.clientY-sy); clampTranslate(slot); applyTransform(slot); e.preventDefault(); };
+  const up=()=>{ if(active){active=false; slot.classList.remove('dragging');} };
+  slot.addEventListener('mousedown',e=>{if(!e.target.closest('.zoom-bar,.remove-btn'))dn(e);}); document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+  slot.addEventListener('touchstart',e=>{if(!e.target.closest('.zoom-bar,.remove-btn'))dn(e);},{passive:false}); slot.addEventListener('touchmove',mv,{passive:false}); slot.addEventListener('touchend',up);
 }
 
-// ── load / clear ───────────────────────────────────────
+function applyTransform(slot) {
+  const img=slot.querySelector('img.disp'); if(!img)return;
+  img.style.transform=`translate(calc(-50% + ${parseFloat(slot.dataset.tx||0)}px), calc(-50% + ${parseFloat(slot.dataset.ty||0)}px)) scale(${parseFloat(slot.dataset.zoom||1)})`;
+}
+function clampTranslate(slot) {
+  const img=slot.querySelector('img.disp'), wr=slot.querySelector('.img-wrap').getBoundingClientRect(), z=parseFloat(slot.dataset.zoom||1);
+  const mx=Math.max(0,(img.naturalWidth*z-wr.width)/2-1), my=Math.max(0,(img.naturalHeight*z-wr.height)/2-1);
+  slot.dataset.tx=Math.max(-mx,Math.min(mx,parseFloat(slot.dataset.tx||0))); slot.dataset.ty=Math.max(-my,Math.min(my,parseFloat(slot.dataset.ty||0)));
+}
+function setSlotZoom(slot, z) {
+  const minZ=parseFloat(slot.dataset.minZoom||1); slot.dataset.zoom=z;
+  if(z<=minZ+0.001){slot.dataset.tx=0;slot.dataset.ty=0;slot.classList.remove('zoomed');}else{slot.classList.add('zoomed');clampTranslate(slot);}
+  applyTransform(slot);
+}
+
 function loadImage(slot, file) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const wrap = slot.querySelector('.img-wrap');
-    wrap.querySelectorAll('img').forEach(i => i.remove());
-
-    const img = document.createElement('img');
-    img.className = 'disp';
-    img.src = ev.target.result;
-    img.draggable = false;
-    img.onload = () => {
-      const sr = slot.getBoundingClientRect();
-      const coverScale = Math.max((sr.width + 2) / img.naturalWidth, (sr.height + 2) / img.naturalHeight);
-      slot.dataset.minZoom = coverScale;
-      slot.dataset.zoom    = coverScale;
-      slot.dataset.tx = 0; slot.dataset.ty = 0;
-      const zr = slot.querySelector('.zoom-bar input[type=range]');
-      if (zr) { zr.min = coverScale; zr.max = coverScale*3; zr.step = coverScale*0.05; zr.value = coverScale; }
-      applyTransform(slot);
+  const r=new FileReader(); r.onload=ev=>{
+    const wrap=slot.querySelector('.img-wrap'); wrap.querySelectorAll('img').forEach(i=>i.remove());
+    const img=document.createElement('img'); img.className='disp'; img.src=ev.target.result; img.draggable=false;
+    img.onload=()=>{
+      const wr=wrap.getBoundingClientRect(), s=Math.max((wr.width+2)/img.naturalWidth, (wr.height+2)/img.naturalHeight);
+      slot.dataset.minZoom=s; slot.dataset.zoom=s; slot.dataset.tx=0; slot.dataset.ty=0;
+      const zr=slot.querySelector('input[type=range]'); if(zr){zr.min=s;zr.max=s*3;zr.step=s*0.05;zr.value=s;} applyTransform(slot);
     };
-    wrap.appendChild(img);
-    slot.classList.add('has-image'); slot.classList.remove('zoomed');
-  };
-  reader.readAsDataURL(file);
+    wrap.appendChild(img); slot.classList.add('has-image'); slot.classList.remove('zoomed');
+  }; r.readAsDataURL(file);
 }
-
 function clearSlot(slot) {
-  slot.querySelector('.img-wrap').innerHTML = '';
-  slot.classList.remove('has-image','zoomed');
-  const fi = slot.querySelector('input[type=file]'); if (fi) fi.value = '';
-  const zr = slot.querySelector('.zoom-bar input[type=range]');
-  if (zr) { zr.min=1; zr.max=3; zr.step=0.05; zr.value=1; }
-  Object.assign(slot.dataset, {zoom:1, tx:0, ty:0, minZoom:1});
+  slot.querySelector('.img-wrap').innerHTML='<div class="placeholder"><div class="plus">+</div><div class="ph-label">photo</div></div>';
+  slot.classList.remove('has-image','zoomed'); const fi=slot.querySelector('input[type=file]'), zr=slot.querySelector('input[type=range]');
+  if(fi)fi.value=''; if(zr){zr.min=1;zr.max=3;zr.value=1;} Object.assign(slot.dataset,{zoom:1,tx:0,ty:0,minZoom:1});
 }
 
 function renderSlots() {
-  const existing = Array.from(grid.children), cur = existing.length;
-  if (slots > cur) for (let i=cur; i<slots; i++) grid.appendChild(createSlot());
-  else if (slots < cur) for (let i=cur-1; i>=slots; i--) grid.removeChild(existing[i]);
-  slotCount.textContent = slots;
+  const ex=Array.from(grid.children), c=ex.length;
+  if(slots>c) for(let i=c;i<slots;i++) grid.appendChild(createSlot());
+  else if(slots<c) for(let i=c-1;i>=slots;i--) grid.removeChild(ex[i]);
+  slotCount.textContent=slots;
 }
 
-// ── 저장: gradient CSS 변수 → 실제 색상값 인라인 (html2canvas CSS var 미지원 보완) ──
-function inlineGradients() {
-  const restores = [];
+addSlotBtn.addEventListener('click', ()=>{if(slots<MAX_SLOTS){slots++;renderSlots();}});
+removeSlotBtn.addEventListener('click', ()=>{if(slots>MIN_SLOTS){slots--;renderSlots();}});
 
-  const c1 = theme1Color.value;
-  const c2 = theme2Color.value;
-  const themeDeepHex = shade(avgHex(c1, c2), -0.25);
 
-  // 1) background: gradient 를 사용하는 요소 처리
-  const bgEls = [
-    ...card.querySelectorAll('.card-bar, .rule, .title-line, .dots span'),
-  ];
-  for (const el of bgEls) {
-    const orig = el.style.background;
-    const computed = getComputedStyle(el).backgroundImage;
-    const color = computed !== 'none' ? computed : getComputedStyle(el).backgroundColor;
-    el.style.background = color;
-    restores.push({ el, prop: 'background', orig });
-  }
-
-  // 2) 텍스트 그라디언트를 사용하던 기호들 (×) -> 투명화 풀고 고정 Hex Color 주입
-  const textEls = card.querySelectorAll('.names .x');
-  for (const el of textEls) {
-    restores.push({ el, prop: 'background', orig: el.style.background });
-    restores.push({ el, prop: 'webkitBackgroundClip', orig: el.style.webkitBackgroundClip });
-    restores.push({ el, prop: 'backgroundClip', orig: el.style.backgroundClip });
-    restores.push({ el, prop: 'color', orig: el.style.color });
-
-    el.style.background = 'none';
-    el.style.webkitBackgroundClip = 'unset';
-    el.style.backgroundClip = 'unset';
-    el.style.color = themeDeepHex;
-  }
-
-  // 3) Sparkle(✦) 컬러 주입
-  for (const el of card.querySelectorAll('.sparkle')) {
-    restores.push({ el, prop: 'color', orig: el.style.color });
-    el.style.color = themeDeepHex;
-  }
-  
-  return restores;
-}
-
-function restoreGradients(restores) {
-  for (const { el, prop, orig } of restores) {
-    el.style[prop] = orig;
-  }
-}
-
-// ── 저장: 이미지 슬롯을 canvas로 사전 크롭 (html2canvas의 CSS transform 해석 보완) ──
+// ── 저장 로직 (사전 크롭 & 스타일 복구) ──
 function bakeImages() {
-  const restores = [];
-  for (const slot of grid.querySelectorAll('.slot.has-image')) {
-    const dispImg = slot.querySelector('img.disp');
-    if (!dispImg || !dispImg.naturalWidth) continue;
+  const res=[];
+  for(const slot of grid.querySelectorAll('.slot.has-image')){
+    const img=slot.querySelector('img.disp'), wrap=slot.querySelector('.img-wrap'); if(!img||!img.naturalWidth)continue;
+    const wr=wrap.getBoundingClientRect(), S=2, cw=Math.round(wr.width*S), ch=Math.round(wr.height*S);
+    const cnv=document.createElement('canvas'); cnv.width=cw; cnv.height=ch; const ctx=cnv.getContext('2d');
+    const z=parseFloat(slot.dataset.zoom||1), tx=parseFloat(slot.dataset.tx||0)*S, ty=parseFloat(slot.dataset.ty||0)*S;
+    const dw=img.naturalWidth*z*S, dh=img.naturalHeight*z*S;
+    ctx.drawImage(img, cw/2+tx-dw/2, ch/2+ty-dh/2, dw, dh);
+    img.style.display='none';
+    const exp=document.createElement('img'); exp.className='exp'; exp.src=cnv.toDataURL('image/png');
+    exp.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;';
+    wrap.appendChild(exp); res.push({wrap,exp,img});
+  } return res;
+}
+function unbakeImages(res) { res.forEach(({wrap,exp,img})=>{wrap.removeChild(exp);img.style.display='';}); }
 
-    const sr = slot.getBoundingClientRect();
-    const SCALE = 2;
-    const cw = Math.round(sr.width  * SCALE);
-    const ch = Math.round(sr.height * SCALE);
-    const cnv = document.createElement('canvas');
-    cnv.width = cw; cnv.height = ch;
-    const ctx = cnv.getContext('2d');
-
-    const z  = parseFloat(slot.dataset.zoom || 1);
-    const tx = parseFloat(slot.dataset.tx   || 0) * SCALE;
-    const ty = parseFloat(slot.dataset.ty   || 0) * SCALE;
-    const dw = dispImg.naturalWidth  * z * SCALE;
-    const dh = dispImg.naturalHeight * z * SCALE;
-    ctx.drawImage(dispImg, cw/2 + tx - dw/2, ch/2 + ty - dh/2, dw, dh);
-
-    dispImg.style.display = 'none';
-    const expImg = document.createElement('img');
-    expImg.className = 'exp';
-    expImg.src = cnv.toDataURL('image/png');
-    expImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;';
-
-    const wrap = slot.querySelector('.img-wrap');
-    wrap.appendChild(expImg);
-    restores.push({ wrap, expImg, dispImg });
+function inlineGradients() {
+  const res=[]; const c1=theme1Color.value, c2=theme2Color.value, th=shade(avgHex(c1,c2),-0.25);
+  for(const el of card.querySelectorAll('.title-line')){
+    res.push({el, p:'background', o:el.style.background});
+    el.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
   }
-  return restores;
-}
-
-function unbakeImages(restores) {
-  for (const { wrap, expImg, dispImg } of restores) {
-    wrap.removeChild(expImg);
-    dispImg.style.display = '';
+  for(const el of card.querySelectorAll('.names .x')){
+    res.push({el, p:'background', o:el.style.background},{el, p:'webkitBackgroundClip', o:el.style.webkitBackgroundClip},{el, p:'color', o:el.style.color});
+    el.style.background='none'; el.style.webkitBackgroundClip='unset'; el.style.color=th;
   }
+  return res;
 }
+function restoreGradients(res) { res.forEach(({el,p,o})=>el.style[p]=o); }
 
-// ── 테마 컬러 업데이트 로직 ────────────────────────────────
-function updateTheme() {
-  const c1=theme1Color.value, c2=theme2Color.value, avg=avgHex(c1,c2);
-  const s=document.documentElement.style;
-  s.setProperty('--theme-1',c1); s.setProperty('--theme-2',c2);
-  s.setProperty('--theme-soft',shade(avg,0.82)); s.setProperty('--theme-deep',shade(avg,-0.25));
-  theme1Swatch.style.background=`linear-gradient(135deg,${c1},${c2})`; theme2Swatch.style.background=c2;
-}
-theme1Color.addEventListener('input', updateTheme);
-theme2Color.addEventListener('input', updateTheme);
-bgColor.addEventListener('input', e => { document.documentElement.style.setProperty('--card',e.target.value); bgSwatch.style.background=e.target.value; });
-
-addSlotBtn.addEventListener('click',     () => { if(slots<MAX_SLOTS){slots++;renderSlots();} });
-removeSlotBtn.addEventListener('click',  () => { if(slots>MIN_SLOTS){slots--;renderSlots();} });
-resetBtn.addEventListener('click', () => { if(confirm('모든 변경사항을 초기화할까요?')) location.reload(); });
-
-// ── download ───────────────────────────────────────────
 downloadBtn.addEventListener('click', async () => {
-  downloadBtn.disabled = true;
-  const origText = downloadBtn.textContent;
-  downloadBtn.textContent = '저장 중...';
-
-  // 1) 이미지 슬롯 사전 크롭
-  const restores = bakeImages();
-
-  // 2) gradient 및 텍스트 렌더링 폴백 (✦, × 요소에 강제 색상 부여)
-  const gradientRestores = inlineGradients();
-
-  // 3) exporting 클래스
+  downloadBtn.disabled=true; const ot=downloadBtn.textContent; downloadBtn.textContent='저장 중...';
+  const baked = bakeImages(); const grads = inlineGradients();
   card.classList.add('exporting');
-
-  try { await document.fonts.ready; } catch(e) {}
-  await new Promise(r => setTimeout(r, 100));
+  try{ await document.fonts.ready; }catch(e){} await new Promise(r=>setTimeout(r,100));
 
   try {
     const canvas = await html2canvas(card, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: getComputedStyle(card).backgroundColor || '#ffffff',
-      logging: false,
-      removeContainer: true,
-      x: 0, y: 0,
-      scrollX: 0, scrollY: 0,
+      scale: 2, useCORS: true, allowTaint: true, backgroundColor: bgColor.value, logging: false
     });
-
     canvas.toBlob(blob => {
-      if (!blob) { alert('이미지 생성 실패. 다시 시도해주세요.'); return; }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pair-card-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      if(!blob) return alert('생성 실패.');
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`album-card-${Date.now()}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }, 'image/png');
-
-  } catch(err) {
-    console.error('저장 오류:', err);
-    alert('저장 오류: ' + err.message);
-  } finally {
-    unbakeImages(restores);
-    restoreGradients(gradientRestores);
-    card.classList.remove('exporting');
-    downloadBtn.disabled = false;
-    downloadBtn.textContent = origText;
-  }
+  } catch(e) { alert('저장 오류: '+e.message); }
+  finally { unbakeImages(baked); restoreGradients(grads); card.classList.remove('exporting'); downloadBtn.disabled=false; downloadBtn.textContent=ot; }
 });
 
-renderSlots();
-updateTheme();
+// 초기화
+renderSlots(); updateTheme();
 </script>
 </body>
 </html>
