@@ -151,10 +151,10 @@
   .names { margin-top:13px; font-family:'Cormorant Garamond','Noto Sans KR',serif; font-style:italic; font-weight:500; font-size:19px; color:var(--ink-soft); letter-spacing:.03em; display:flex; align-items:center; justify-content:center; gap:10px; }
   .names .x { font-style:normal; font-size:14px; color:var(--theme-deep); font-weight:700; }
   .quote-wrap { text-align:center; margin:0 auto 38px; position:relative; z-index:3; max-width:720px; }
-  .quote { display:inline-block; position:relative; font-family:'Cormorant Garamond','Noto Sans KR',serif; font-size:15px; line-height:1.75; color:var(--ink-soft); max-width:82%; padding:9px 28px; background:var(--quote-bg); border-radius:12px; }
-  .quote::before,.quote::after { position:absolute; font-family:'EB Garamond',serif; font-size:30px; color:var(--theme-deep); opacity:.3; }
-  .quote::before { content:'“'; left:7px; top:-2px; }
-  .quote::after { content:'”'; right:7px; bottom:-10px; }
+  .quote { display:inline-block; position:relative; font-family:'Cormorant Garamond','Noto Sans KR',serif; font-size:13px; line-height:1.7; color:var(--ink-soft); max-width:76%; padding:7px 24px; background:var(--quote-bg); border-radius:11px; }
+  .quote::before,.quote::after { position:absolute; font-family:'EB Garamond',serif; font-size:25px; color:var(--theme-deep); opacity:.3; }
+  .quote::before { content:'“'; left:6px; top:-1px; }
+  .quote::after { content:'”'; right:6px; bottom:-8px; }
   .card.no-meta .diary-meta, .card.no-eyebrow .eyebrow, .card.no-quote .quote-wrap, .card.no-credit .foot { display:none; }
 
   /* ── 사진 칸 ── */
@@ -333,7 +333,7 @@
     .caption { left:8px; right:8px; bottom:7px; font-size:11px; }
     .zoom-bar { left:10px; right:10px; bottom:42px; }
     .slot .plus { width:32px; height:32px; }
-    .quote { max-width:96%; font-size:14px; }
+    .quote { max-width:94%; font-size:12.5px; padding:6px 22px; }
     .opt-row { grid-template-columns:1fr; gap:6px; }
     .opt-toggles { grid-template-columns:1fr; }
     .gif-stage canvas { height:120px; }
@@ -489,7 +489,7 @@
         <h4>파일</h4>
         <div class="opt-box">
           <div class="opt-row"><div class="lbl">크기</div>
-            <div class="chips" data-gif="width"><button data-v="480">작게 <small>480</small></button><button data-v="640">보통 <small>640</small></button><button data-v="800">크게 <small>800</small></button></div>
+            <div class="chips" data-gif="width"><button data-v="560">작게 <small>560</small></button><button data-v="720">보통 <small>720</small></button><button data-v="920">크게 <small>920</small></button></div>
           </div>
           <div class="opt-toggles" style="border-top:1px solid var(--ui-line-2)">
             <label class="check">계속 반복<input type="checkbox" id="gifLoop" checked></label>
@@ -889,7 +889,20 @@ function download(blob, name) {
 }
 const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
 
-async function buildScene(S) {
+/* 고품질 축소: 절반씩 줄여 가며 계단 현상 없이 */
+function downscale(src, tw, th) {
+  let c = src, w = src.width, h = src.height;
+  const step = (nw, nh) => {
+    const n = document.createElement('canvas'); n.width = nw; n.height = nh;
+    const x = n.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(c, 0, 0, nw, nh); c = n; w = nw; h = nh;
+  };
+  while (w / 2 >= tw && h / 2 >= th) step(Math.round(w / 2), Math.round(h / 2));
+  if (w !== tw || h !== th) step(tw, th);
+  return c;
+}
+async function buildScene(S, ss = 1) {
+  const R = S * ss;
   if (typeof html2canvas === 'undefined') throw new Error('저장 도구를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침하세요.');
   document.activeElement?.blur?.();
   setActiveSticker(null);
@@ -911,10 +924,11 @@ async function buildScene(S) {
     if (!ls.classList.contains('has-image') || !img?.naturalWidth) return;
     const W = wrap.offsetWidth, H = wrap.offsetHeight;
     const c = document.createElement('canvas');
-    c.width = Math.round(W * S); c.height = Math.round(H * S);
-    const s = fitScale(ls) * +(ls.dataset.z || 1) * S;
+    c.width = Math.round(W * R); c.height = Math.round(H * R);
+    const s = fitScale(ls) * +(ls.dataset.z || 1) * R;
     const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
-    c.getContext('2d').drawImage(img, c.width / 2 + (+ls.dataset.tx || 0) * S - dw / 2, c.height / 2 + (+ls.dataset.ty || 0) * S - dh / 2, dw, dh);
+    const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, c.width / 2 + (+ls.dataset.tx || 0) * R - dw / 2, c.height / 2 + (+ls.dataset.ty || 0) * R - dh / 2, dw, dh);
     Object.assign(c.style, { position: 'absolute', inset: '0', width: '100%', height: '100%' });
     cwrap.appendChild(c);
   });
@@ -930,7 +944,8 @@ async function buildScene(S) {
     });
     // 바탕 (사진 칸 제외)
     cs.forEach(el => el.style.visibility = 'hidden');
-    const base = await html2canvas(clone, { scale: S, backgroundColor: colors.page, useCORS: true, logging: false });
+    let base = await html2canvas(clone, { scale: R, backgroundColor: colors.page, useCORS: true, logging: false });
+    if (ss > 1) base = downscale(base, Math.round(base.width / ss), Math.round(base.height / ss));
     // 사진 칸 조각 (투명 배경, 기울기 없이)
     const toggles = [...card.classList].filter(c => c !== 'card').join(' ');
     for (const info of slotsInfo) {
@@ -941,7 +956,11 @@ async function buildScene(S) {
       el.style.width = el.offsetWidth + 'px';
       pad.appendChild(el);
       document.body.appendChild(pad);
-      try { info.sprite = await html2canvas(pad, { scale: S, backgroundColor: null, logging: false }); }
+      try {
+        let sp = await html2canvas(pad, { scale: R, backgroundColor: null, logging: false });
+        if (ss > 1) sp = downscale(sp, Math.round(sp.width / ss), Math.round(sp.height / ss));
+        info.sprite = sp;
+      }
       finally { pad.remove(); }
     }
     // 스티커
@@ -966,6 +985,7 @@ function slotAnim(style, p) {
 function drawScene(ctx, sc, vis, style) {
   const { S } = sc;
   ctx.globalAlpha = 1;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(sc.base, 0, 0);
   for (const s of sc.slots) {
     if (!vis.has(s.i)) continue;
@@ -1010,7 +1030,7 @@ $('#downloadBtn').addEventListener('click', async () => {
 
 /* ── GIF 저장 ── */
 const gifModal = $('#gifModal');
-const gifOpt = { style: 'pop', order: 'top', speed: '7', hold: '2000', width: '640' };
+const gifOpt = { style: 'pop', order: 'top', speed: '7', hold: '2000', width: '720' };
 let gifBlob = null, gifUrl = null, gifBusy = false;
 
 function syncGifChips() {
@@ -1165,6 +1185,62 @@ gifModal.addEventListener('click', e => { if (e.target === gifModal) closeGif();
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeGif(); closePops(); } });
 $('#saveGif').addEventListener('click', () => gifBlob && download(gifBlob, `pair-album-${stamp()}.gif`));
 
+/* ── GIF 인코딩 ──
+   · 모든 프레임이 한 팔레트를 공유 → 프레임마다 색이 바뀌며 번쩍이는 현상 없음
+   · 색이 정확히 맞지 않는 곳만 규칙적 디더링 → 그라데이션 줄무늬 제거, 단색 영역은 깨끗하게
+   · 이전 프레임과 같은 픽셀은 투명 처리 → 용량 절약 */
+const BAYER = (() => {
+  const m = [0, 32, 8, 40, 2, 34, 10, 42, 48, 16, 56, 24, 50, 18, 58, 26, 12, 44, 4, 36, 14, 46, 6, 38, 60, 28, 52, 20, 62, 30, 54, 22,
+    3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25, 15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21];
+  return Float32Array.from(m, v => (v + .5) / 64 - .5);
+})();
+function makeGifPalette(samples) {
+  const { quantize } = window.GifEnc;
+  // 샘플 픽셀을 한 버퍼로 모아 공통 팔레트 생성 (마지막 칸은 투명색 자리)
+  const total = samples.reduce((t, d) => t + d.length, 0);
+  const buf = new Uint8ClampedArray(total);
+  let o = 0; for (const d of samples) { buf.set(d, o); o += d.length; }
+  const pal = quantize(buf, 255, { format: 'rgb565' }).map(c => [c[0], c[1], c[2]]);
+  while (pal.length < 255) pal.push(pal[pal.length - 1] || [0, 0, 0]);
+  const pr = new Int16Array(255), pg = new Int16Array(255), pb = new Int16Array(255);
+  pal.forEach((c, i) => { pr[i] = c[0]; pg[i] = c[1]; pb[i] = c[2]; });
+  const cache = new Int16Array(1 << 18).fill(-1); // 6-6-6 비트 조회표
+  const near = (r, g, b) => {
+    const key = ((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2);
+    let v = cache[key];
+    if (v >= 0) return v;
+    let best = 0, bd = 1e9;
+    for (let i = 0; i < 255; i++) {
+      const dr = r - pr[i], dg = g - pg[i], db = b - pb[i];
+      const d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+      if (d < bd) { bd = d; best = i; }
+    }
+    cache[key] = best; return best;
+  };
+  pal.push([0, 0, 0]); // 255 = 투명
+  return { palette: pal, near, pr, pg, pb };
+}
+function indexFrame(data, w, h, P, out) {
+  const { near, pr, pg, pb } = P;
+  for (let y = 0, p = 0; y < h; y++) {
+    const row = (y & 7) << 3;
+    for (let x = 0; x < w; x++, p++) {
+      const q = p << 2, r = data[q], g = data[q + 1], b = data[q + 2];
+      let i = near(r, g, b);
+      const er = r - pr[i], eg = g - pg[i], eb = b - pb[i];
+      const err = Math.sqrt((er * er + eg * eg + eb * eb) / 3);
+      if (err > 1.5) {
+        // 오차가 있는 곳만, 오차 크기에 맞춘 세기로 디더링
+        const amp = Math.min(28, err * 2.6) * BAYER[row | (x & 7)];
+        const rr = r + amp, gg = g + amp, bb = b + amp;
+        i = near(rr < 0 ? 0 : rr > 255 ? 255 : rr | 0, gg < 0 ? 0 : gg > 255 ? 255 : gg | 0, bb < 0 ? 0 : bb > 255 ? 255 : bb | 0);
+      }
+      out[p] = i;
+    }
+  }
+  return out;
+}
+
 function setGifProgress(p, label) {
   $('#gifProgress i').style.width = Math.round(p * 100) + '%';
   $('#makeGif').textContent = label;
@@ -1180,23 +1256,38 @@ async function createGif() {
   $('#busy').classList.add('on');
   try {
     const S = +gifOpt.width / card.offsetWidth;
-    const sc = await buildScene(S);
+    const sc = await buildScene(S, clamp(3 / S, 1, 2)); // 2배로 그린 뒤 줄여서 글자·테두리를 선명하게
     $('#busy').classList.remove('on');
     const frames = buildTimeline(sc.slots.filter(s => s.has).map(s => s.i), $('#gifEmpty').checked ? sc.slots.filter(s => !s.has).map(s => s.i) : [], gifOpt);
 
     const out = document.createElement('canvas');
     out.width = sc.base.width; out.height = sc.base.height;
     const ctx = out.getContext('2d', { willReadFrequently: true });
-    const { GIFEncoder, quantize, applyPalette } = window.GifEnc;
-    const enc = GIFEncoder();
+    const W = out.width, H = out.height, N = W * H;
+    // 공통 팔레트: 첫 장면 + 완성 장면
+    setGifProgress(.04, '색 분석 중');
+    drawScene(ctx, sc, frames[0].vis, gifOpt.style);
+    const s0 = ctx.getImageData(0, 0, W, H).data.slice();
+    drawScene(ctx, sc, frames[frames.length - 1].vis, gifOpt.style);
+    const s1 = ctx.getImageData(0, 0, W, H).data;
+    const P = makeGifPalette([s1, s0]);
+    await sleep(0);
+
+    const enc = window.GifEnc.GIFEncoder();
     const loop = $('#gifLoop').checked ? 0 : -1;
+    let prev = new Uint8Array(N), cur = new Uint8Array(N);
+    const outIdx = new Uint8Array(N);
     for (let f = 0; f < frames.length; f++) {
-      setGifProgress(.05 + .93 * f / frames.length, `만드는 중 ${Math.round(f / frames.length * 100)}%`);
+      setGifProgress(.06 + .92 * f / frames.length, `만드는 중 ${Math.round(f / frames.length * 100)}%`);
       drawScene(ctx, sc, frames[f].vis, gifOpt.style);
-      const { data } = ctx.getImageData(0, 0, out.width, out.height);
-      const palette = quantize(data, 256, { format: 'rgb565' });
-      const index = applyPalette(data, palette, 'rgb565');
-      enc.writeFrame(index, out.width, out.height, { palette, delay: frames[f].delay, repeat: loop });
+      indexFrame(ctx.getImageData(0, 0, W, H).data, W, H, P, cur);
+      if (f === 0) {
+        enc.writeFrame(cur, W, H, { palette: P.palette, delay: frames[f].delay, repeat: loop, dispose: 1 });
+      } else {
+        for (let k = 0; k < N; k++) outIdx[k] = cur[k] === prev[k] ? 255 : cur[k];
+        enc.writeFrame(outIdx, W, H, { delay: frames[f].delay, transparent: true, transparentIndex: 255, dispose: 1 });
+      }
+      const t = prev; prev = cur; cur = t;
       if (f % 2 === 0) await sleep(0);
     }
     enc.finish();
