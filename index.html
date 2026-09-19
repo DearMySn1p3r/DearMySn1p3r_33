@@ -210,6 +210,9 @@
   .editable:hover { background:rgba(120,78,70,.04); }
   .editable:focus { background:var(--ui-tint); box-shadow:0 0 0 3px var(--ui-tint); }
   .editable:empty::before { content:attr(data-ph); opacity:.4; }
+  .editable:focus:empty::before, .caption:focus:empty::before { content:'\200b'; }
+  .editable:focus:empty { display:inline-block; min-width:3em; }
+  .title.editable:focus:empty { min-width:2.6em; }
 
   /* ── 스티커 ── */
   .sticker { position:absolute; transform:translate(-50%,-50%); cursor:grab; z-index:50; user-select:none; touch-action:none; }
@@ -490,6 +493,9 @@
         <div class="opt-box">
           <div class="opt-row"><div class="lbl">크기</div>
             <div class="chips" data-gif="width"><button data-v="560">작게 <small>560</small></button><button data-v="720">보통 <small>720</small></button><button data-v="920">크게 <small>920</small></button></div>
+          </div>
+          <div class="opt-row"><div class="lbl">모서리<small>둥근 모서리 바깥</small></div>
+            <div class="chips" data-gif="matte"><button data-v="white">흰색</button><button data-v="light">투명</button><button data-v="dark">투명 <small>다크모드용</small></button></div>
           </div>
           <div class="opt-toggles" style="border-top:1px solid var(--ui-line-2)">
             <label class="check">계속 반복<input type="checkbox" id="gifLoop" checked></label>
@@ -782,7 +788,6 @@ function createSlot() {
     setZoomRel(slot, clamp(+zr.value * Math.exp(-e.deltaY * .0015), 1, 3));
   }, { passive: false });
   slot.addEventListener('dblclick', e => { if (slot.classList.contains('has-image') && e.target.closest('.img-wrap')) setZoomRel(slot, 1); });
-  slot.querySelector('.caption').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
   setupPan(slot);
   slot.addEventListener('dragenter', e => { e.preventDefault(); slot.classList.add('dragover'); });
   slot.addEventListener('dragover', e => e.preventDefault());
@@ -871,10 +876,34 @@ function fillSlots(files, start = 0) {
 $('#addSlot').addEventListener('click', () => { if (slots < MAX_SLOTS) { slots++; renderSlots(); } });
 $('#removeSlot').addEventListener('click', () => { if (slots > MIN_SLOTS) { slots--; renderSlots(); } });
 
-/* 텍스트 붙여넣기는 서식 없이 */
-card.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.closest('[contenteditable]')) { e.preventDefault(); e.target.blur(); }
+/* ── 글자 편집 ──
+   · 기본 글자(Pair Title 등)는 누르면 바로 비워지고, 아무것도 안 쓰고 나가면 다시 돌아옴
+   · 직접 쓴 글자를 다 지우고 나가면 빈 칸으로 둠 (저장 이미지에도 안 나옴)
+   · Ctrl+A / Cmd+A는 그 칸의 글자만 전체 선택 */
+card.querySelectorAll('.editable').forEach(el => { el.dataset.def = el.textContent; });
+const editHost = t => t?.closest?.('[contenteditable]');
+card.addEventListener('focusin', e => {
+  const el = e.target.closest('.editable'); if (!el) return;
+  el.dataset.typed = '';
+  if (el.textContent === el.dataset.def) el.textContent = '';
 });
+card.addEventListener('input', e => { const el = editHost(e.target); if (el) el.dataset.typed = '1'; });
+card.addEventListener('focusout', e => {
+  const el = e.target.closest('[contenteditable]'); if (!el) return;
+  if (!el.textContent.trim()) {
+    el.textContent = el.classList.contains('editable') && !el.dataset.typed ? el.dataset.def : '';
+  }
+});
+function selectAllIn(el) {
+  const r = document.createRange(); r.selectNodeContents(el);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+card.addEventListener('keydown', e => {
+  const el = editHost(e.target); if (!el) return;
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); el.blur(); return; }
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.code === 'KeyA' || e.key.toLowerCase() === 'a')) { e.preventDefault(); selectAllIn(el); }
+});
+/* 텍스트 붙여넣기는 서식 없이 */
 card.addEventListener('paste', e => {
   if (!e.target.closest('[contenteditable]')) return;
   e.preventDefault();
@@ -1038,7 +1067,8 @@ $('#downloadBtn').addEventListener('click', async () => {
 
 /* ── GIF 저장 ── */
 const gifModal = $('#gifModal');
-const gifOpt = { style: 'pop', order: 'top', speed: '7', hold: '2000', width: '720' };
+const gifOpt = { style: 'pop', order: 'top', speed: '7', hold: '2000', width: '720', matte: 'white' };
+const MATTE = { white: [255, 255, 255], light: [255, 255, 255], dark: [18, 18, 20] };
 let gifBlob = null, gifUrl = null, gifBusy = false;
 
 function syncGifChips() {
@@ -1202,13 +1232,14 @@ const BAYER = (() => {
     3, 35, 11, 43, 1, 33, 9, 41, 51, 19, 59, 27, 49, 17, 57, 25, 15, 47, 7, 39, 13, 45, 5, 37, 63, 31, 55, 23, 61, 29, 53, 21];
   return Float32Array.from(m, v => (v + .5) / 64 - .5);
 })();
-function makeGifPalette(samples) {
+function makeGifPalette(samples, must = []) {
   const { quantize } = window.GifEnc;
   // 샘플 픽셀을 한 버퍼로 모아 공통 팔레트 생성 (마지막 칸은 투명색 자리)
   const total = samples.reduce((t, d) => t + d.length, 0);
   const buf = new Uint8ClampedArray(total);
   let o = 0; for (const d of samples) { buf.set(d, o); o += d.length; }
-  const pal = quantize(buf, 255, { format: 'rgb565' }).map(c => [c[0], c[1], c[2]]);
+  const pal = quantize(buf, 255 - must.length, { format: 'rgb565' }).map(c => [c[0], c[1], c[2]]);
+  for (const c of must) pal.push([c[0], c[1], c[2]]); // 모서리 흰색 등은 정확한 색으로 고정
   while (pal.length < 255) pal.push(pal[pal.length - 1] || [0, 0, 0]);
   const pr = new Int16Array(255), pg = new Int16Array(255), pb = new Int16Array(255);
   pal.forEach((c, i) => { pr[i] = c[0]; pg[i] = c[1]; pb[i] = c[2]; });
@@ -1228,13 +1259,31 @@ function makeGifPalette(samples) {
   pal.push([0, 0, 0]); // 255 = 투명
   return { palette: pal, near, pr, pg, pb };
 }
+/* GIF는 반투명을 못 쓰므로, 가장자리 픽셀을 배경색과 미리 섞어 계단 없이 부드럽게 */
+function matteEdges(data, m, fill = false) {
+  for (let q = 0; q < data.length; q += 4) {
+    const a = data[q + 3];
+    if (a === 255) continue;
+    if (fill) {
+      const t = a / 255, u = 1 - t;
+      data[q] = data[q] * t + m[0] * u; data[q + 1] = data[q + 1] * t + m[1] * u; data[q + 2] = data[q + 2] * t + m[2] * u;
+      data[q + 3] = 255; continue;
+    }
+    if (a === 0) continue;
+    if (a < 20) { data[q + 3] = 0; continue; }
+    const t = a / 255, u = 1 - t;
+    data[q] = data[q] * t + m[0] * u; data[q + 1] = data[q + 1] * t + m[1] * u; data[q + 2] = data[q + 2] * t + m[2] * u;
+    data[q + 3] = 255;
+  }
+  return data;
+}
 function indexFrame(data, w, h, P, out) {
   const { near, pr, pg, pb } = P;
   for (let y = 0, p = 0; y < h; y++) {
     const row = (y & 7) << 3;
     for (let x = 0; x < w; x++, p++) {
       const q = p << 2, r = data[q], g = data[q + 1], b = data[q + 2];
-      if (data[q + 3] < 128) { out[p] = 255; continue; }
+      if (data[q + 3] === 0) { out[p] = 255; continue; }
       let i = near(r, g, b);
       const er = r - pr[i], eg = g - pg[i], eb = b - pb[i];
       const err = Math.sqrt((er * er + eg * eg + eb * eb) / 3);
@@ -1279,9 +1328,10 @@ async function createGif() {
     const s0 = ctx.getImageData(0, 0, W, H).data.slice();
     drawScene(ctx, sc, frames[frames.length - 1].vis, gifOpt.style);
     const s1 = ctx.getImageData(0, 0, W, H).data;
+    const matte = MATTE[gifOpt.matte] || MATTE.white, fillCorners = gifOpt.matte === 'white' || !MATTE[gifOpt.matte];
     const [pr0, pg0, pb0] = hexRgb(colors.paper);
-    for (const d of [s0, s1]) for (let q = 0; q < d.length; q += 4) if (d[q + 3] < 128) { d[q] = pr0; d[q + 1] = pg0; d[q + 2] = pb0; }
-    const P = makeGifPalette([s1, s0]);
+    for (const d of [s0, s1]) { matteEdges(d, matte, fillCorners); for (let q = 0; q < d.length; q += 4) if (d[q + 3] === 0) { d[q] = pr0; d[q + 1] = pg0; d[q + 2] = pb0; } }
+    const P = makeGifPalette([s1, s0], fillCorners ? [matte] : []);
     await sleep(0);
 
     const enc = window.GifEnc.GIFEncoder();
@@ -1291,7 +1341,7 @@ async function createGif() {
     for (let f = 0; f < frames.length; f++) {
       setGifProgress(.06 + .92 * f / frames.length, `만드는 중 ${Math.round(f / frames.length * 100)}%`);
       drawScene(ctx, sc, frames[f].vis, gifOpt.style);
-      indexFrame(ctx.getImageData(0, 0, W, H).data, W, H, P, cur);
+      indexFrame(matteEdges(ctx.getImageData(0, 0, W, H).data, matte, fillCorners), W, H, P, cur);
       if (f === 0) {
         enc.writeFrame(cur, W, H, { palette: P.palette, delay: frames[f].delay, repeat: loop, dispose: 1, transparent: true, transparentIndex: 255 });
       } else {
