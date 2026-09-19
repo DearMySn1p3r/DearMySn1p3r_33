@@ -944,7 +944,7 @@ async function buildScene(S, ss = 1) {
     });
     // 바탕 (사진 칸 제외)
     cs.forEach(el => el.style.visibility = 'hidden');
-    let base = await html2canvas(clone, { scale: R, backgroundColor: colors.page, useCORS: true, logging: false });
+    let base = await html2canvas(clone, { scale: R, backgroundColor: null, useCORS: true, logging: false });
     if (ss > 1) base = downscale(base, Math.round(base.width / ss), Math.round(base.height / ss));
     // 사진 칸 조각 (투명 배경, 기울기 없이)
     const toggles = [...card.classList].filter(c => c !== 'card').join(' ');
@@ -965,7 +965,8 @@ async function buildScene(S, ss = 1) {
     }
     // 스티커
     const stickers = [...card.querySelectorAll('.sticker')].map(w => ({ img: w.querySelector('img'), x: +w.dataset.x, y: +w.dataset.y, w: +w.dataset.w, r: +w.dataset.r })).filter(s => s.img?.naturalWidth);
-    return { base, S, slots: slotsInfo, stickers };
+    const radius = parseFloat(getComputedStyle(clone).borderTopLeftRadius) || 0;
+    return { base, S, slots: slotsInfo, stickers, radius };
   } finally { host.remove(); }
 }
 
@@ -986,6 +987,7 @@ function drawScene(ctx, sc, vis, style) {
   const { S } = sc;
   ctx.globalAlpha = 1;
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.drawImage(sc.base, 0, 0);
   for (const s of sc.slots) {
     if (!vis.has(s.i)) continue;
@@ -1009,6 +1011,12 @@ function drawScene(ctx, sc, vis, style) {
     ctx.drawImage(st.img, -st.w * S / 2, -h * S / 2, st.w * S, h * S);
     ctx.restore();
   }
+  // 둥근 앨범 바깥은 투명하게 (모서리 바깥 배경색이 저장되지 않도록)
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.roundRect(0, 0, ctx.canvas.width, ctx.canvas.height, sc.radius * S); ctx.fill();
+  ctx.restore();
 }
 
 /* ── PNG 저장 ── */
@@ -1226,6 +1234,7 @@ function indexFrame(data, w, h, P, out) {
     const row = (y & 7) << 3;
     for (let x = 0; x < w; x++, p++) {
       const q = p << 2, r = data[q], g = data[q + 1], b = data[q + 2];
+      if (data[q + 3] < 128) { out[p] = 255; continue; }
       let i = near(r, g, b);
       const er = r - pr[i], eg = g - pg[i], eb = b - pb[i];
       const err = Math.sqrt((er * er + eg * eg + eb * eb) / 3);
@@ -1270,6 +1279,8 @@ async function createGif() {
     const s0 = ctx.getImageData(0, 0, W, H).data.slice();
     drawScene(ctx, sc, frames[frames.length - 1].vis, gifOpt.style);
     const s1 = ctx.getImageData(0, 0, W, H).data;
+    const [pr0, pg0, pb0] = hexRgb(colors.paper);
+    for (const d of [s0, s1]) for (let q = 0; q < d.length; q += 4) if (d[q + 3] < 128) { d[q] = pr0; d[q + 1] = pg0; d[q + 2] = pb0; }
     const P = makeGifPalette([s1, s0]);
     await sleep(0);
 
@@ -1282,7 +1293,7 @@ async function createGif() {
       drawScene(ctx, sc, frames[f].vis, gifOpt.style);
       indexFrame(ctx.getImageData(0, 0, W, H).data, W, H, P, cur);
       if (f === 0) {
-        enc.writeFrame(cur, W, H, { palette: P.palette, delay: frames[f].delay, repeat: loop, dispose: 1 });
+        enc.writeFrame(cur, W, H, { palette: P.palette, delay: frames[f].delay, repeat: loop, dispose: 1, transparent: true, transparentIndex: 255 });
       } else {
         for (let k = 0; k < N; k++) outIdx[k] = cur[k] === prev[k] ? 255 : cur[k];
         enc.writeFrame(outIdx, W, H, { delay: frames[f].delay, transparent: true, transparentIndex: 255, dispose: 1 });
